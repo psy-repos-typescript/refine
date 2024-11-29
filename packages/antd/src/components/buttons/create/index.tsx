@@ -1,78 +1,67 @@
 import React from "react";
-import { Button, ButtonProps } from "antd";
+import { Button } from "antd";
 import { PlusSquareOutlined } from "@ant-design/icons";
+import { useCreateButton } from "@refinedev/core";
 import {
-    useNavigation,
-    useRouterContext,
-    useTranslate,
-    useCan,
-    useResourceWithRoute,
-    ResourceRouterParams,
-} from "@pankod/refine-core";
+  RefineButtonClassNames,
+  RefineButtonTestIds,
+} from "@refinedev/ui-types";
 
-export type CreateButtonProps = ButtonProps & {
-    resourceName?: string;
-    hideText?: boolean;
-    ignoreAccessControlProvider?: boolean;
-};
+import type { CreateButtonProps } from "../types";
 
 /**
  * <CreateButton> uses Ant Design's {@link https://ant.design/components/button/ `<Button> component`}.
- * It uses the {@link https://refine.dev/docs/core/hooks/navigation/useNavigation#create `create`} method from {@link https://refine.dev/docs/core/hooks/navigation/useNavigation `useNavigation`} under the hood.
+ * It uses the {@link https://refine.dev/docs/api-reference/core/hooks/navigation/useNavigation#create `create`} method from {@link https://refine.dev/docs/api-reference/core/hooks/navigation/useNavigation `useNavigation`} under the hood.
  * It can be useful to redirect the app to the create page route of resource}.
  *
- * @see {@link https://refine.dev/docs/ui-frameworks/antd/components/buttons/create-button} for more details.
+ * @see {@link https://refine.dev/docs/api-reference/antd/components/buttons/create-button} for more details.
  */
 export const CreateButton: React.FC<CreateButtonProps> = ({
-    resourceName: propResourceName,
-    hideText = false,
-    ignoreAccessControlProvider = false,
-    children,
-    ...rest
+  resource: resourceNameFromProps,
+  resourceNameOrRouteName: propResourceNameOrRouteName,
+  hideText = false,
+  accessControl,
+  meta,
+  children,
+  onClick,
+  ...rest
 }) => {
-    const resourceWithRoute = useResourceWithRoute();
+  const { hidden, disabled, label, title, LinkComponent, to } = useCreateButton(
+    {
+      resource: resourceNameFromProps ?? propResourceNameOrRouteName,
+      accessControl,
+      meta,
+    },
+  );
 
-    const translate = useTranslate();
+  if (hidden) return null;
 
-    const { create } = useNavigation();
-
-    const { useParams } = useRouterContext();
-
-    const { resource: routeResourceName } = useParams<ResourceRouterParams>();
-
-    const resource = resourceWithRoute(routeResourceName);
-
-    const resourceName = propResourceName ?? resource.name;
-
-    const onButtonClick = () => create(resourceName, "push");
-
-    const { data } = useCan({
-        resource: resourceName,
-        action: "create",
-        queryOptions: {
-            enabled: !ignoreAccessControlProvider,
-        },
-    });
-
-    const createButtonDisabledTitle = () => {
-        if (data?.can) return "";
-        else if (data?.reason) return data.reason;
-        else
-            return translate(
-                "buttons.notAccessTitle",
-                "You don't have permission to access",
-            );
-    };
-
-    return (
-        <Button
-            onClick={onButtonClick}
-            icon={<PlusSquareOutlined />}
-            disabled={data?.can === false}
-            title={createButtonDisabledTitle()}
-            {...rest}
-        >
-            {!hideText && (children ?? translate("buttons.create", "Create"))}
-        </Button>
-    );
+  return (
+    <LinkComponent
+      to={to}
+      replace={false}
+      onClick={(e: React.PointerEvent<HTMLButtonElement>) => {
+        if (disabled) {
+          e.preventDefault();
+          return;
+        }
+        if (onClick) {
+          e.preventDefault();
+          onClick(e);
+        }
+      }}
+    >
+      <Button
+        icon={<PlusSquareOutlined />}
+        disabled={disabled}
+        title={title}
+        data-testid={RefineButtonTestIds.CreateButton}
+        className={RefineButtonClassNames.CreateButton}
+        type="primary"
+        {...rest}
+      >
+        {!hideText && (children ?? label)}
+      </Button>
+    </LinkComponent>
+  );
 };

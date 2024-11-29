@@ -1,5 +1,7 @@
 import React from "react";
 
-export const DefaultLayout: React.FC = ({ children }) => {
-    return <div>{children}</div>;
+import type { LayoutProps } from "../../../contexts/refine/types";
+
+export const DefaultLayout: React.FC<LayoutProps> = ({ children }) => {
+  return <div>{children}</div>;
 };

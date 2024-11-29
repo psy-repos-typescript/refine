@@ -3,151 +3,96 @@ title: Create Your Easy Customizable Internal Issue Tracker With Refine and Supa
 description: This web application will  us to create issue and tasks for your team members. You will also be able to choose the priority of these tasks, their tags, and which person to assign them to.
 slug: customizable-issue-tracker-with-refine-and-supabase
 authors: melih
-tags: [refine, supabase, react, tutorial]
-image: https://refine.dev/img/refine_social.png
+tags: [Refine, supabase, react, tutorial]
+image: https://refine.ams3.cdn.digitaloceanspaces.com/website/static/img/placeholder.png
 hide_table_of_contents: false
 ---
 
-import start from '@site/static/img/blog/2021-11-12-issue-tracker-refine/start.png';
-import login from '@site/static/img/blog/2021-11-12-issue-tracker-refine/login.gif';
-import labelTable from '@site/static/img/blog/2021-11-12-issue-tracker-refine/label_table.png';
-import common from '@site/static/img/blog/2021-11-12-issue-tracker-refine/common_table.png';
-import userTable from '@site/static/img/blog/2021-11-12-issue-tracker-refine/user_table.png';
-import taskTable from '@site/static/img/blog/2021-11-12-issue-tracker-refine/task_table.png';
-import labelValue from '@site/static/img/blog/2021-11-12-issue-tracker-refine/label_value.png';
-import priorityValue from '@site/static/img/blog/2021-11-12-issue-tracker-refine/priority_value.png';
-import statusValue from '@site/static/img/blog/2021-11-12-issue-tracker-refine/status_value.png';
-import list from '@site/static/img/blog/2021-11-12-issue-tracker-refine/list.png';
-import taskList from '@site/static/img/blog/2021-11-12-issue-tracker-refine/task_list.png';
-import create from '@site/static/img/blog/2021-11-12-issue-tracker-refine/create.png';
-import edit from '@site/static/img/blog/2021-11-12-issue-tracker-refine/edit.png';
-import show from '@site/static/img/blog/2021-11-12-issue-tracker-refine/show.png';
-import dashOverview from '@site/static/img/blog/2021-11-12-issue-tracker-refine/dash_overview.png';
-import overview from '@site/static/img/blog/2021-11-12-issue-tracker-refine/overview-project.gif';
-import filter from '@site/static/img/blog/2021-11-12-issue-tracker-refine/filter.gif';
-import dashboard from '@site/static/img/blog/2021-11-12-issue-tracker-refine/dashboard.gif';
-import taskTest from '@site/static/img/blog/2021-11-12-issue-tracker-refine/task_test.gif';
-import createTest from '@site/static/img/blog/2021-11-12-issue-tracker-refine/create_test.gif';
-import editTest from '@site/static/img/blog/2021-11-12-issue-tracker-refine/edit_test.gif';
+:::caution
 
+This post was created using version 3.x.x of **Refine**. Although we plan to update it with the latest version of **Refine** as soon as possible, you can still benefit from the post in the meantime.
+
+You should know that **Refine** version 4.x.x is backward compatible with version 3.x.x, so there is no need to worry. If you want to see the differences between the two versions, check out the [migration guide](https://refine.dev/docs/migration-guide/).
+
+Just be aware that the source code example in this post have been updated to version 4.x.x.
+
+:::
 
 In this article, we will make a customizable internal issue tracker web application with supabase and refine.
 
 <!--truncate-->
 
-This web application will  us to create issue and tasks for your team members. You will also be able to choose the priority of these tasks, their tags, and which person to assign them to.
-
+This web application will us to create issue and tasks for your team members. You will also be able to choose the priority of these tasks, their tags, and which person to assign them to.
 
 We will use [Supabase](https://supabase.io/) in backend. Let's start by creating our Supabase account and tables.
-
 
 ## Create Supabase Database
 
 We have to go to [Supabase](https://supabase.io/) and create an organization and database. Then we can start creating our tables.
 
-
-<div class="img-container">
-    <div class="window">
-        <div class="control red"></div>
-        <div class="control orange"></div>
-        <div class="control green"></div>
-    </div>
-    <img src={start} alt="overview" />
-</div>
+<img src="https://refine.ams3.cdn.digitaloceanspaces.com/blog/2021-11-12-issue-tracker-refine/start.png" alt="overview" />
 <br />
- 
+
 The tables we need to create for our project are as follows:
 
 > label
-* `id`: bigint
-* `title`: varchar
-* `color`: varchar
+
+- `id`: bigint
+- `title`: varchar
+- `color`: varchar
 
 <br />
-<div class="img-container">
-    <div class="window">
-        <div class="control red"></div>
-        <div class="control orange"></div>
-        <div class="control green"></div>
-    </div>
-    <img src={labelTable} alt="overview" />
-</div>
+<img src="https://refine.ams3.cdn.digitaloceanspaces.com/blog/2021-11-12-issue-tracker-refine/label_table.png" alt="overview" />
 <br />
 
-> priority 
-* `id` bigint
-* `title` varchar
+> priority
+
+- `id` bigint
+- `title` varchar
 
 <br />
-<div class="img-container">
-    <div class="window">
-        <div class="control red"></div>
-        <div class="control orange"></div>
-        <div class="control green"></div>
-    </div>
-    <img src={common} alt="overview" />
-</div>
+<img src="https://refine.ams3.cdn.digitaloceanspaces.com/blog/2021-11-12-issue-tracker-refine/common_table.png" alt="overview" />
 <br />
- 
 
 > status
-* `id` bigint
-* `title` varchar
+
+- `id` bigint
+- `title` varchar
 
 <br />
-<div class="img-container">
-    <div class="window">
-        <div class="control red"></div>
-        <div class="control orange"></div>
-        <div class="control green"></div>
-    </div>
-    <img src={common} alt="overview" />
-</div>
+<img src="https://refine.ams3.cdn.digitaloceanspaces.com/blog/2021-11-12-issue-tracker-refine/common_table.png" alt="overview" />
 <br />
 
 > users
-* `email` varchar
-* `id` uuid
+
+- `email` varchar
+- `id` uuid
 
 <br />
-<div class="img-container">
-    <div class="window">
-        <div class="control red"></div>
-        <div class="control orange"></div>
-        <div class="control green"></div>
-    </div>
-    <img src={userTable} alt="overview" />
-</div>
+<img src="https://refine.ams3.cdn.digitaloceanspaces.com/blog/2021-11-12-issue-tracker-refine/user_table.png" alt="overview" />
 <br />
 
- 
 > tasks
-* `id` bigint
-* `title` varchar
-* `description` varchar
-* `start_time` date
-* `end_time` date
-* `label` bigint
-* `priority` bigint
-* `statuts` bigint
-* `users` uuid
+
+- `id` bigint
+- `title` varchar
+- `description` varchar
+- `start_time` date
+- `end_time` date
+- `label` bigint
+- `priority` bigint
+- `statutes` bigint
+- `users` uuid
 
 <br />
-<div class="img-container">
-    <div class="window">
-        <div class="control red"></div>
-        <div class="control orange"></div>
-        <div class="control green"></div>
-    </div>
-    <img src={taskTable} alt="overview" />
-</div>
+<img src="https://refine.ams3.cdn.digitaloceanspaces.com/blog/2021-11-12-issue-tracker-refine/task_table.png" alt="overview" />
 <br />
- 
 
 We created our database tables. The important part here is that as you can see, in our tasks table, label, priority, status and users values ​​are defined as bigint. To summarize the reason for this, we relation the label, priority, status and users tables that we created above with the corresponding values ​​in our tasks table.
 
 :::tip
-  Add Foreign key relationships steps:
+
+Add Foreign key relationships steps:
 
 1. Got to a table, right click the column you wish to add a foreign key for
 
@@ -158,91 +103,63 @@ We created our database tables. The important part here is that as you can see, 
 4. Select the table and column to make a foreign key for
 
 5. Click save
+
 :::
 
-
-So we can take  reference their id and use their value in our tasks table.
+So we can take reference their id and use their value in our tasks table.
 
 Now let's go to the Supabase Table editor and create our constant values.
 
 `Label Table`
 
-<div class="img-container">
-    <div class="window">
-        <div class="control red"></div>
-        <div class="control orange"></div>
-        <div class="control green"></div>
-    </div>
-    <img src={labelValue} alt="overview" />
-</div>
+<img src="https://refine.ams3.cdn.digitaloceanspaces.com/blog/2021-11-12-issue-tracker-refine/label_value.png" alt="overview" />
 <br />
 
 `Priority Table`
 
-<div class="img-container">
-    <div class="window">
-        <div class="control red"></div>
-        <div class="control orange"></div>
-        <div class="control green"></div>
-    </div>
-    <img src={priorityValue} alt="overview" />
-</div>
+<img src="https://refine.ams3.cdn.digitaloceanspaces.com/blog/2021-11-12-issue-tracker-refine/priority_value.png" alt="overview" />
 <br />
 
- 
 `Status Table`
 
-<div class="img-container">
-    <div class="window">
-        <div class="control red"></div>
-        <div class="control orange"></div>
-        <div class="control green"></div>
-    </div>
-    <img src={statusValue} alt="overview" />
-</div>
+<img src="https://refine.ams3.cdn.digitaloceanspaces.com/blog/2021-11-12-issue-tracker-refine/status_value.png" alt="overview" />
 <br />
- 
-Let's create a test task to better understand key relation. 
 
-<div class="img-container">
-    <div class="window">
-        <div class="control red"></div>
-        <div class="control orange"></div>
-        <div class="control green"></div>
-    </div>
-    <img src={taskTest} alt="overview" />
-</div>
+Let's create a test task to better understand key relation.
+
+<img src="https://refine.ams3.cdn.digitaloceanspaces.com/blog/2021-11-12-issue-tracker-refine/task_test.gif" alt="overview" />
 <br />
 
 As you can see, since we have defined the ids of our label, status, priority and users tables as references to our tasks table, we can now use their values.
 
-Let's look at how we can use this data we created on the Supabase side with refine .
+Let's look at how we can use this data we created on the Supabase side with Refine .
 
 ## Refine Project Setup
 
-Now let's refine the task-manager panel. With superplate, we can quickly create a refine project
+Now let's Refine the task-manager panel. With superplate, we can quickly create a Refine project
 
 ```bash
-  npx superplate-cli refine-task-manager
+  npm create refine-app@latest refine-task-manager -- -b v3
 ```
 
 ```bash
-✔ Select your project type › refine
+✔ Select your project type › refine-react
 ✔ What will be the name of your app · refine-task-manager
-✔ Package manager: · npm
-✔ Do you want to customize theme?: · css
-✔ Data Provider: · supabase-data-provider
-✔ Do you want to customize layout? · custom-layout
-✔ i18n - Internationalization: · no
+✔ Package manager: · Npm
+✔ Do you want to use a UI Framework? · Ant Design
+✔ Do you want a customized theme?: · Default theme
+✔ Router Provider: · React Router v6
+✔ Data Provider: · Supabase
+✔ Do you want a customized layout? · Yes
+✔ i18n - Internationalization: · No
 ```
 
 After the project setup is loaded, let's start by entering our project and making the necessary changes.
 
-Let's add our supabase url and key to our refine project.
-
+Let's add our supabase url and key to our Refine project.
 
 ```ts title="src/utility/supabaseClient.ts"
-import { createClient } from "@pankod/refine-supabase";
+import { createClient } from "@refinedev/supabase";
 
 const SUPABASE_URL = "YOUR_SUPABASE_URL";
 const SUPABASE_KEY = "YOUR_SUPABASE_API_KEY";
@@ -255,11 +172,13 @@ Now we can access and list the tables we created via the supabase.
 - Add custom login and signup page in App.tsx
 
 Our purpose here is to log in if there is a registered user in the supabase. If you do not have a registered user, saving a user to the supabase with refine.
- 
+
 ## Custom Login Page
 
-```tsx
+```tsx title="src/pages/login/index.tsx"
 import React from "react";
+import { useLogin, useNavigation } from "@refinedev/core";
+
 import {
   Row,
   Col,
@@ -269,9 +188,7 @@ import {
   Form,
   Input,
   Button,
-  useLogin,
-  useNavigation,
-} from "@pankod/refine";
+} from "@refinedev/antd";
 
 import "./styles.css";
 
@@ -315,7 +232,7 @@ export const Login: React.FC = () => {
                 onFinish={(values) => {
                   login(values);
                 }}
-                 initialValues={{
+                initialValues={{
                   email: "info@refine.dev",
                   password: "refine-supabase",
                 }}
@@ -344,7 +261,10 @@ export const Login: React.FC = () => {
                   Don’t have an account?
                   <a
                     href="#"
-                    style={{ fontWeight: "bold", marginLeft:  12 }}
+                    style={{
+                      fontWeight: "bold",
+                      marginLeft: 12,
+                    }}
                     onClick={() => push("signup")}
                   >
                     Sign up
@@ -358,13 +278,39 @@ export const Login: React.FC = () => {
     </AntdLayout>
   );
 };
+```
 
+```css title="src/pages/login/styles.css"
+.layout {
+  background: radial-gradient(50% 50% at 50% 50%, #63386a 0%, #310438 100%);
+  background-size: "cover";
+}
+
+.container {
+  max-width: 408px;
+  margin: auto;
+}
+
+.title {
+  text-align: center;
+  color: #626262;
+  font-size: 30px;
+  letter-spacing: -0.04em;
+}
+
+.imageContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
 ```
 
 ## Custom Signup Page
 
-```tsx
+```tsx title="src/pages/signup.tsx"
 import React from "react";
+import { useNavigation } from "@refinedev/core";
 import {
   Row,
   Col,
@@ -374,8 +320,7 @@ import {
   Form,
   Input,
   Button,
-  useNavigation,
-} from "@pankod/refine";
+} from "@refinedev/antd";
 import "./styles.css";
 import { supabaseClient } from "utility";
 
@@ -460,7 +405,10 @@ export const Signup: React.FC = () => {
                   Don’t have an account?
                   <a
                     href="#"
-                    style={{ fontWeight: "bold" }}
+                    style={{
+                      fontWeight: "bold",
+                      marginLeft: 12,
+                    }}
                     onClick={() => push("login")}
                   >
                     Sign in
@@ -474,22 +422,46 @@ export const Signup: React.FC = () => {
     </AntdLayout>
   );
 };
+```
 
+```css title="src/pages/signup/styles.css"
+.layout {
+  background: radial-gradient(50% 50% at 50% 50%, #63386a 0%, #310438 100%);
+  background-size: "cover";
+}
+
+.container {
+  max-width: 408px;
+  margin: auto;
+}
+
+.title {
+  text-align: center;
+  color: #626262;
+  font-size: 30px;
+  letter-spacing: -0.04em;
+}
+
+.imageContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
 ```
 
 ```tsx title="App.tsx"
-import { Refine } from "@pankod/refine";
-import routerProvider from "@pankod/refine-react-router";
-import { dataProvider } from "@pankod/refine-supabase";
+import { Refine } from "@refinedev/core";
+import { useNotificationProvider Layout, ErrorComponent } from "@refinedev/antd";
+import routerProvider from "@refinedev/react-router-v6";
+import { dataProvider } from "@refinedev/supabase";
 import authProvider from "./authProvider";
 import { supabaseClient } from "utility";
 
-import "@pankod/refine/dist/styles.min.css";
+import "@refinedev/antd/dist/reset.css";
 
 import { Login } from "./pages/login";
 import { Signup } from "./pages/signup";
-
-
 
 function App() {
   return (
@@ -501,12 +473,14 @@ function App() {
         ...routerProvider,
         routes: [
           {
-            exact: true,
-            component: Signup,
+            element: <Signup />,
             path: "/signup",
           },
         ] as typeof routerProvider.routes,
       }}
+      notificationProvider={useNotificationProvider}
+      Layout={Layout}
+      catchAll={<ErrorComponent />}
     />
   );
 }
@@ -514,32 +488,26 @@ function App() {
 export default App;
 ```
 
-Here we define our login and signup pages. We then use the refine's [router-provider](https://refine.dev/docs/api-references/providers/router-provider/) and [useNavigaton](https://refine.dev/docs/core/hooks/navigation/useNavigation/) hooks to switch between login and signup.
+Here we define our login and signup pages. We then use the Refine's [router-provider](https://refine.dev/docs/packages/documentation/routers/) and [useNavigaton](https://refine.dev/docs/core/hooks/navigation/useNavigation/) hooks to switch between login and signup.
 
-<div class="img-container">
-    <div class="window">
-        <div class="control red"></div>
-        <div class="control orange"></div>
-        <div class="control green"></div>
-    </div>
-    <img src={login} alt="overview" />
-</div>
+<img src="https://refine.ams3.cdn.digitaloceanspaces.com/blog/2021-11-12-issue-tracker-refine/login.gif" alt="overview" />
 <br />
- 
 
-We can now create supabase users and log in from our refine interface.
- 
+We can now create supabase users and log in from our Refine interface.
+
 ## Add Resource
+
 **Adding resources according to the table name we created in Supabase**
 
 ```tsx
-import { Refine } from "@pankod/refine";
-import routerProvider from "@pankod/refine-react-router";
-import { dataProvider } from "@pankod/refine-supabase";
+import { Refine } from "@refinedev/core";
+import { useNotificationProvider Layout, ErrorComponent } from "@refinedev/antd";
+import routerProvider from "@refinedev/react-router-v6";
+import { dataProvider } from "@refinedev/supabase";
 import authProvider from "./authProvider";
 import { supabaseClient } from "utility";
 
-import "@pankod/refine/dist/styles.min.css";
+import "@refinedev/antd/dist/reset.css";
 
 import { Login } from "./pages/login";
 import { Signup } from "./pages/signup";
@@ -549,49 +517,48 @@ function App() {
     <Refine
       dataProvider={dataProvider(supabaseClient)}
       authProvider={authProvider}
+      DashboardPage={Dashboard}
       LoginPage={Login}
       routerProvider={{
         ...routerProvider,
         routes: [
           {
-            exact: true,
-            component: Signup,
+            element: <Signup />,
             path: "/signup",
           },
         ] as typeof routerProvider.routes,
       }}
       resources={[
         {
-          name: "users"
+          name: "users",
         },
         {
-          name: "tasks"
+          name: "tasks",
         },
       ]}
+      notificationProvider={useNotificationProvider}
+      Layout={Layout}
+      catchAll={<ErrorComponent />}
     />
   );
 }
+
+export default App;
 ```
 
-<div class="img-container">
-    <div class="window">
-        <div class="control red"></div>
-        <div class="control orange"></div>
-        <div class="control green"></div>
-    </div>
-    <img src={list} alt="overview" />
-</div>
+<img src="https://refine.ams3.cdn.digitaloceanspaces.com/blog/2021-11-12-issue-tracker-refine/list.png" alt="overview" />
 <br />
- 
+
 We can now create lists of tasks and make changes to them.
 
-## Add List and Filter 
+## Add List and Filter
 
 ```tsx title="src/pages/task/list.tsx"
 import React from "react";
+import { useMany, HttpError, CrudFilters } from "@refinedev/core";
+
 import {
   useTable,
-  useMany,
   List,
   Table,
   TextField,
@@ -601,13 +568,10 @@ import {
   ShowButton,
   EditButton,
   DeleteButton,
-  IResourceComponentsProps,
-  HttpError,
-  CrudFilters,
   Row,
   Col,
   Card,
-} from "@pankod/refine";
+} from "@refinedev/antd";
 
 import {
   ILabel,
@@ -620,7 +584,7 @@ import {
 
 import { Filter } from "../task";
 
-export const TaskList: React.FC<IResourceComponentsProps> = () => {
+export const TaskList = () => {
   const { tableProps, searchFormProps } = useTable<
     ITask,
     HttpError,
@@ -684,14 +648,15 @@ export const TaskList: React.FC<IResourceComponentsProps> = () => {
           field: "end_time",
           operator: "lte",
           value: end_time ? end_time[1].toISOString() : undefined,
-        }
+        },
       );
       return filters;
     },
   });
 
   const labelIds = tableProps?.dataSource?.map((item) => item.label) ?? [];
-  const priorityIds = tableProps?.dataSource?.map((item) => item.priority) ?? [];
+  const priorityIds =
+    tableProps?.dataSource?.map((item) => item.priority) ?? [];
   const assignedIds = tableProps?.dataSource?.map((item) => item.users) ?? [];
   const statusIds = tableProps?.dataSource?.map((item) => item.status) ?? [];
 
@@ -828,7 +793,6 @@ export const TaskList: React.FC<IResourceComponentsProps> = () => {
 };
 ```
 
-
 ```tsx title="src/pages/task/filter.tsx"
 import React from "react";
 import {
@@ -840,11 +804,11 @@ import {
   DatePicker,
   Icons,
   Button,
-} from "@pankod/refine";
+} from "@refinedev/antd";
 
 import { ITask, IPriority, IStatus, IAuthUser } from "interfaces";
 
-const { RangePicker } = DatePicker
+const { RangePicker } = DatePicker;
 
 export const Filter: React.FC<{ formProps: FormProps }> = ({ formProps }) => {
   const { selectProps: labelSelectProps } = useSelect<ITask>({
@@ -856,10 +820,10 @@ export const Filter: React.FC<{ formProps: FormProps }> = ({ formProps }) => {
   });
 
   const { selectProps: statusProps } = useSelect<IStatus>({
-    resource: "status"
+    resource: "status",
   });
 
-  const { selectProps: assigneProps } = useSelect<IAuthUser>({
+  const { selectProps: assigneeProps } = useSelect<IAuthUser>({
     resource: "users",
     optionValue: "id",
     optionLabel: "email",
@@ -868,22 +832,19 @@ export const Filter: React.FC<{ formProps: FormProps }> = ({ formProps }) => {
   return (
     <Form layout="vertical" {...formProps}>
       <Form.Item label="Search" name="title">
-        <Input
-          placeholder="Title"
-          prefix={<Icons.SearchOutlined />}
-        />
+        <Input placeholder="Title" prefix={<Icons.SearchOutlined />} />
       </Form.Item>
       <Form.Item label="Label" name="label">
-        <Select {...labelSelectProps} allowClear placeholder="Seach Label" />
+        <Select {...labelSelectProps} allowClear placeholder="Search Label" />
       </Form.Item>
       <Form.Item label="Priority" name="priority">
-        <Select {...priorityProps} allowClear placeholder="Seach Priority" />
+        <Select {...priorityProps} allowClear placeholder="Search Priority" />
       </Form.Item>
       <Form.Item label="Status" name="status">
         <Select {...statusProps} allowClear placeholder="Search Status" />
       </Form.Item>
       <Form.Item label="Assigned" name="users">
-        <Select {...assigneProps} allowClear placeholder="Search Assignee" />
+        <Select {...assigneeProps} allowClear placeholder="Search Assignee" />
       </Form.Item>
       <Form.Item label="Start Date" name="start_time">
         <RangePicker />
@@ -920,7 +881,7 @@ export interface IPriority {
 
 export interface IStatus {
   id: string;
-  title: string
+  title: string;
 }
 
 export interface ITask {
@@ -932,7 +893,7 @@ export interface ITask {
   label: string;
   priority: string;
   status: string;
-  users: string
+  users: string;
 }
 
 export interface ITaskFilterVariables {
@@ -946,17 +907,10 @@ export interface ITaskFilterVariables {
 }
 ```
 
-<div class="img-container">
-    <div class="window">
-        <div class="control red"></div>
-        <div class="control orange"></div>
-        <div class="control green"></div>
-    </div>
-    <img src={taskList} alt="overview" />
-</div>
+<img src="https://refine.ams3.cdn.digitaloceanspaces.com/blog/2021-11-12-issue-tracker-refine/task_list.png" alt="overview" />
 <br />
 
- Using refine's [tableSearch](https://refine.dev/docs/guides-and-concepts/search/table-search) and list, we can create our list and perform filtering. 
+Using Refine's [tableSearch](https://refine.dev/docs/guides-and-concepts/search/table-search) and list, we can create our list and perform filtering.
 
 As seen in the example, we listed and showed the task table we created in supabase with refine. Now you can make changes as you want with refine.
 
@@ -972,13 +926,12 @@ import {
   Input,
   Select,
   useSelect,
-  IResourceComponentsProps,
   DatePicker,
-} from "@pankod/refine";
+} from "@refinedev/antd";
 
 import { ITask, ILabel, IPriority, IStatus, IAuthUser } from "interfaces";
 
-export const TaskCreate: React.FC<IResourceComponentsProps> = () => {
+export const TaskCreate = () => {
   const { formProps, saveButtonProps } = useForm<ITask>();
 
   const { selectProps: labelSelectProps } = useSelect<ILabel>({
@@ -989,15 +942,15 @@ export const TaskCreate: React.FC<IResourceComponentsProps> = () => {
     resource: "priority",
   });
 
-  const { selectProps: assigneSelectProps } = useSelect<IAuthUser>({
+  const { selectProps: assigneeSelectProps } = useSelect<IAuthUser>({
     resource: "users",
     optionValue: "id",
     optionLabel: "email",
   });
 
   const { selectProps: statusSelectProps } = useSelect<IStatus>({
-    resource: "status"
-  })
+    resource: "status",
+  });
 
   return (
     <Create saveButtonProps={saveButtonProps}>
@@ -1022,11 +975,11 @@ export const TaskCreate: React.FC<IResourceComponentsProps> = () => {
         <Form.Item label="Priority" name="priority">
           <Select {...prioritySelectPorps} />
         </Form.Item>
-        <Form.Item label="Assigne To" name="users">
-          <Select {...assigneSelectProps} />
+        <Form.Item label="Assign To" name="users">
+          <Select {...assigneeSelectProps} />
         </Form.Item>
         <Form.Item label="Select Status" name="status">
-          <Select {...statusSelectProps}/>
+          <Select {...statusSelectProps} />
         </Form.Item>
         <Form.Item label="Start Date" name="start_time">
           <DatePicker style={{ width: "50%" }} />
@@ -1040,33 +993,17 @@ export const TaskCreate: React.FC<IResourceComponentsProps> = () => {
 };
 ```
 
-<div class="img-container">
-    <div class="window">
-        <div class="control red"></div>
-        <div class="control orange"></div>
-        <div class="control green"></div>
-    </div>
-    <img src={createTest} alt="overview" />
-</div>
+<img src="https://refine.ams3.cdn.digitaloceanspaces.com/blog/2021-11-12-issue-tracker-refine/create_test.gif" alt="overview" />
 <br />
-
 
 ## Edit Task
 
 ```tsx title="src/pages/task/edit.tsx"
-import {
-  useForm,
-  Form,
-  Input,
-  Select,
-  Edit,
-  useSelect,
-  IResourceComponentsProps,
-} from "@pankod/refine";
+import { useForm, Form, Input, Select, Edit, useSelect } from "@refinedev/antd";
 
-import { ITask, IPriority,  IStatus, IAuthUser } from "interfaces";
+import { ITask, IPriority, IStatus, IAuthUser } from "interfaces";
 
-export const EditTask: React.FC<IResourceComponentsProps> = () => {
+export const EditTask = () => {
   const { formProps, saveButtonProps } = useForm<ITask>();
 
   const { selectProps: labelSelectProps } = useSelect<ITask>({
@@ -1077,7 +1014,7 @@ export const EditTask: React.FC<IResourceComponentsProps> = () => {
     resource: "priority",
   });
 
-  const { selectProps: assigneProps } = useSelect<IAuthUser>({
+  const { selectProps: assigneeProps } = useSelect<IAuthUser>({
     resource: "users",
     optionValue: "id",
     optionLabel: "email",
@@ -1105,8 +1042,8 @@ export const EditTask: React.FC<IResourceComponentsProps> = () => {
         <Form.Item label="Status" name="status">
           <Select {...statusProps} />
         </Form.Item>
-        <Form.Item label="Assigne" name="users">
-          <Select {...assigneProps} />
+        <Form.Item label="Assignee" name="users">
+          <Select {...assigneeProps} />
         </Form.Item>
       </Form>
     </Edit>
@@ -1114,20 +1051,14 @@ export const EditTask: React.FC<IResourceComponentsProps> = () => {
 };
 ```
 
-<div class="img-container">
-    <div class="window">
-        <div class="control red"></div>
-        <div class="control orange"></div>
-        <div class="control green"></div>
-    </div>
-    <img src={editTest} alt="overview" />
-</div>
+<img src="https://refine.ams3.cdn.digitaloceanspaces.com/blog/2021-11-12-issue-tracker-refine/edit_test.gif" alt="overview" />
 <br />
 
 ## Show Task
 
 ```tsx title="src/pages/task/show"
-import { useShow, Show, Typography, Tag, useOne, DateField } from "@pankod/refine";
+import { useShow, useOne } from "@refinedev/core";
+import { Show, Typography, Tag, DateField } from "@refinedev/antd";
 import { ITask, ILabel, IPriority, IStatus, IAuthUser } from "interfaces";
 
 const { Title, Text } = Typography;
@@ -1157,12 +1088,14 @@ export const TaskShow: React.FC = () => {
     id: record?.status || "",
   });
 
+  console.log(status?.data);
+
   return (
     <Show isLoading={isLoading}>
       <Title level={5}>Task:</Title>
       <Text>{record?.title || "-"}</Text>
 
-      <Title level={5}>Task Desciption:</Title>
+      <Title level={5}>Task Description:</Title>
       <Text>{record?.description}</Text>
 
       <Title level={5}>Assigned To:</Title>
@@ -1182,31 +1115,23 @@ export const TaskShow: React.FC = () => {
       <Text>{status?.data?.title ?? "-"}</Text>
 
       <Title level={5}>Start Date:</Title>
-      <DateField format="DD/MM/YYYY" value={record?.start_time ?? "-"}/>
+      <DateField format="DD/MM/YYYY" value={record?.start_time ?? "-"} />
 
       <Title level={5}>Due Date:</Title>
-      <DateField format="DD/MM/YYYY" value={record?.end_time ?? "-"}/>
+      <DateField format="DD/MM/YYYY" value={record?.end_time ?? "-"} />
     </Show>
   );
 };
 ```
-<div class="img-container">
-    <div class="window">
-        <div class="control red"></div>
-        <div class="control orange"></div>
-        <div class="control green"></div>
-    </div>
-    <img src={show} alt="overview" />
-</div>
+
+<img src="https://refine.ams3.cdn.digitaloceanspaces.com/blog/2021-11-12-issue-tracker-refine/show.png" alt="overview" />
 <br />
- 
 
-By using Refine's basic views such as [create](https://refine.dev/docs/ui-framewors/antd/components/basic-views/create), [edit](https://refine.dev/docs/ui-frameworks/antd/components/basic-views/edit/) and [show](https://refine.dev/docs/ui-frameworks/antd/components/basic-views/show/), we can now create tasks, edit these tasks and view their details.
-
+By using Refine's basic views such as [create](https://refine.dev/docs/ui-frameworks/antd/components/basic-views/create), [edit](https://refine.dev/docs/ui-frameworks/antd/components/basic-views/edit/) and [show](https://refine.dev/docs/ui-frameworks/antd/components/basic-views/show/), we can now create tasks, edit these tasks and view their details.
 
 Let's see how to add a dashboard page to our project together.
 
-## Add Custom Chart 
+## Add Custom Chart
 
 ```tsx title="src/components/task/pie.tsx"
 import React from "react";
@@ -1245,7 +1170,8 @@ export const TaskChart: React.FC<ChartProps> = ({ data }) => {
 
 ```tsx title="src/pages/dashboard/index.tsx"
 import React from "react";
-import { useList, useMany, Row, Col, Card } from "@pankod/refine";
+import { useList, useMany } from "@refinedev/core";
+import { Row, Col, Card } from "@refinedev/antd";
 import { ITask, ILabel, IPriority, IStatus, IAuthUser } from "interfaces";
 import { TaskChart } from "components/task/pie";
 import { groupBy } from "helper";
@@ -1287,7 +1213,10 @@ export const Dashboard = () => {
           <TaskChart
             data={
               labels?.data.map((i) => {
-                return { type: i.title, value: groupBy(labelIds)[i.id] };
+                return {
+                  type: i.title,
+                  value: groupBy(labelIds)[i.id],
+                };
               }) ?? []
             }
           />
@@ -1298,7 +1227,10 @@ export const Dashboard = () => {
           <TaskChart
             data={
               priority?.data.map((i) => {
-                return { type: i.title, value: groupBy(priorityIds)[i.id] };
+                return {
+                  type: i.title,
+                  value: groupBy(priorityIds)[i.id],
+                };
               }) ?? []
             }
           />
@@ -1309,7 +1241,10 @@ export const Dashboard = () => {
           <TaskChart
             data={
               status?.data.map((i) => {
-                return { type: i.title, value: groupBy(statusIds)[i.id] };
+                return {
+                  type: i.title,
+                  value: groupBy(statusIds)[i.id],
+                };
               }) ?? []
             }
           />
@@ -1320,7 +1255,10 @@ export const Dashboard = () => {
           <TaskChart
             data={
               assigned?.data.map((i) => {
-                return { type: i.email, value: groupBy(assignedIds)[i.id] };
+                return {
+                  type: i.email,
+                  value: groupBy(assignedIds)[i.id],
+                };
               }) ?? []
             }
           />
@@ -1331,29 +1269,24 @@ export const Dashboard = () => {
 };
 ```
 
-<div class="img-container">
-    <div class="window">
-        <div class="control red"></div>
-        <div class="control orange"></div>
-        <div class="control green"></div>
-    </div>
-    <img src={dashOverview} alt="overview" />
-</div>
+<img src="https://refine.ams3.cdn.digitaloceanspaces.com/blog/2021-11-12-issue-tracker-refine/dash_overview.png" alt="overview" />
 <br/>
 
-
- 
 Final version of our `<App.tsx/>`.
 
 ```tsx
-import { Refine } from "@pankod/refine";
-import routerProvider from "@pankod/refine-react-router";
-import { dataProvider } from "@pankod/refine-supabase";
+import { Refine } from "@refinedev/core";
+import { useNotificationProvider Layout, ErrorComponent } from "@refinedev/antd";
+import routerProvider from "@refinedev/react-router-v6";
+import { dataProvider } from "@refinedev/supabase";
 import authProvider from "./authProvider";
 import { supabaseClient } from "utility";
 
-import "@pankod/refine/dist/styles.min.css";
+import "@refinedev/antd/dist/reset.css";
 
+import { UserList } from "./pages/user";
+import { TaskList, TaskShow, TaskCreate, EditTask } from "./pages/task";
+import { Dashboard } from "./pages/dashboard";
 import { Login } from "./pages/login";
 import { Signup } from "./pages/signup";
 
@@ -1368,8 +1301,7 @@ function App() {
         ...routerProvider,
         routes: [
           {
-            exact: true,
-            component: Signup,
+            element: <Signup />,
             path: "/signup",
           },
         ] as typeof routerProvider.routes,
@@ -1387,9 +1319,14 @@ function App() {
           show: TaskShow,
         },
       ]}
+      notificationProvider={useNotificationProvider}
+      Layout={Layout}
+      catchAll={<ErrorComponent />}
     />
   );
 }
+
+export default App;
 ```
 
 Our project is done. Lets see how its look like.
@@ -1398,55 +1335,27 @@ Our project is done. Lets see how its look like.
 
 `Overview`
 
-<div class="img-container">
-    <div class="window">
-        <div class="control red"></div>
-        <div class="control orange"></div>
-        <div class="control green"></div>
-    </div>
-    <img src={overview} alt="overview" />
-</div>
+<img src="https://refine.ams3.cdn.digitaloceanspaces.com/blog/2021-11-12-issue-tracker-refine/overview-project.gif" alt="overview" />
 <br />
 
 `Task Filter`
 
-<div class="img-container">
-    <div class="window">
-        <div class="control red"></div>
-        <div class="control orange"></div>
-        <div class="control green"></div>
-    </div>
-    <img src={filter} alt="overview" />
-</div>
+<img src="https://refine.ams3.cdn.digitaloceanspaces.com/blog/2021-11-12-issue-tracker-refine/filter.gif" alt="overview" />
 <br />
 
 `Dashboard Page`
 
-<div class="img-container">
-    <div class="window">
-        <div class="control red"></div>
-        <div class="control orange"></div>
-        <div class="control green"></div>
-    </div>
-    <img src={dashboard} alt="overview" />
-</div>
+<img src="https://refine.ams3.cdn.digitaloceanspaces.com/blog/2021-11-12-issue-tracker-refine/dashboard.gif" alt="overview" />
 <br />
 
-As you can see, we made a simple and short task manager application using refine on our front end and using its data-provider. 
+As you can see, we made a simple and short task manager application using Refine on our front end and using its data-provider.
 
-[Here is repo](https://github.com/pankod/refine/tree/master/examples/blog/issueTracker) 
+[Here is repo](https://github.com/refinedev/refine/tree/master/examples/blog-issue-tracker)
 
-For more information about Refine: [Refine Github Page](https://github.com/pankod/refine)
+For more information about Refine: [Refine Github Page](https://github.com/refinedev/refine)
 
-For other examples and articles that will interest you with refine:  [https://refine.dev/blog/](https://refine.dev/blog/)
+For other examples and articles that will interest you with Refine: [https://refine.dev/blog/](https://refine.dev/blog/)
 
-## Live Codesandbox Example
+## Example
 
-<iframe src="https://codesandbox.io/embed/refine-supabase-issue-tracker-ifuh4?autoresize=1fontsize=14&=1&theme=dark&view=preview"
-     style={{width: "100%", height:"80vh", border: "0px", borderRadius: "8px", overflow:"hidden"}}
-     title="refine-supabase-issue-tracker"
-     allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking"
-     sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
-></iframe>
- 
-
+<CodeSandboxExample path="blog-issue-tracker" />

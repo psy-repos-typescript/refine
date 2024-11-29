@@ -1,23 +1,23 @@
 import { dataProvider } from "../../src/index";
-import client from "../appwriteClient";
+import { client } from "../appwriteClient";
 import "./index.mock";
 
 describe("updateMany", () => {
-    it("correct response with metaData", async () => {
-        const { data } = await dataProvider(client).updateMany({
-            resource: "6180e4315f3e7",
-            ids: ["61b9dd4a6261d", "61b886fbd9398"],
-            variables: {
-                content: "Batch updated content",
-            },
-        });
-
-        expect(data[0].id).toEqual("61b9dd4a6261d");
-        expect(data[0].title).toEqual("Updated Title");
-        expect(data[0].content).toEqual("Batch updated content");
-
-        expect(data[1].id).toEqual("61b886fbd9398");
-        expect(data[1].title).toEqual("test");
-        expect(data[1].content).toEqual("Batch updated content");
+  it("correct response with meta", async () => {
+    const { data } = await dataProvider(client, {
+      databaseId: "default",
+    }).updateMany!({
+      resource: "blog_posts",
+      ids: ["669e49f3001cb7c76d6b", "669e49f30008c2067f82"],
+      variables: {
+        title: "Lorem Ipsum",
+      },
     });
+
+    expect(data[0].id).toEqual("669e49f3001cb7c76d6b");
+    expect(data[0].title).toEqual("Lorem Ipsum");
+
+    expect(data[1].id).toEqual("669e49f30008c2067f82");
+    expect(data[1].title).toEqual("Lorem Ipsum");
+  });
 });

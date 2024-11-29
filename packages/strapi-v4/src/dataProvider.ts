@@ -1,330 +1,290 @@
-import axios, { AxiosInstance } from "axios";
+import type { DataProvider as IDataProvider, HttpError } from "@refinedev/core";
+import type { AxiosInstance } from "axios";
+import qs from "qs";
 import {
-    DataProvider as IDataProvider,
-    HttpError,
-    CrudFilters,
-    CrudSorting,
-    CrudOperators,
-} from "@pankod/refine-core";
-import { stringify, parse } from "qs";
-
-const axiosInstance = axios.create();
-
-axiosInstance.interceptors.response.use(
-    (response) => {
-        return response;
-    },
-    (error) => {
-        const customError: HttpError = {
-            ...error,
-            message: error.response?.data?.message,
-            statusCode: error.response?.status,
-        };
-
-        return Promise.reject(customError);
-    },
-);
-
-const mapOperator = (operator: CrudOperators) => {
-    switch (operator) {
-        case "nin":
-            return "notIn";
-        case "ncontains":
-            return "notContains";
-        case "containss":
-            return "containsi";
-        case "ncontainss":
-            return "notContainsi";
-    }
-
-    return operator;
-};
-
-const generateSort = (sort?: CrudSorting) => {
-    const _sort: string[] = [];
-
-    if (sort) {
-        sort.map((item) => {
-            if (item.order) {
-                _sort.push(`${item.field}:${item.order}`);
-            }
-        });
-    }
-
-    return _sort;
-};
-
-const generateFilter = (filters?: CrudFilters) => {
-    let rawQuery = "";
-
-    if (filters) {
-        filters.map(({ field, operator, value }) => {
-            const mapedOperator = mapOperator(operator);
-
-            if (Array.isArray(value)) {
-                value.map((val: string) => {
-                    rawQuery += `&filters${field}[$${mapedOperator}]=${val}`;
-                });
-            } else {
-                rawQuery += `&filters[${field}][$${mapedOperator}]=${value}`;
-            }
-        });
-    }
-
-    const parsedQuery = parse(rawQuery);
-    const queryFilters = stringify(parsedQuery, { encodeValuesOnly: true });
-
-    return queryFilters;
-};
-
-const normalizeData = (data: any): any => {
-    const isObject = (data: any) =>
-        Object.prototype.toString.call(data) === "[object Object]";
-
-    const flatten = (data: any) => {
-        if (!data.attributes) return data;
-
-        return {
-            id: data.id,
-            ...data.attributes,
-        };
-    };
-
-    if (Array.isArray(data)) {
-        return data.map((item) => normalizeData(item));
-    }
-
-    if (isObject(data)) {
-        if (Array.isArray(data.data)) {
-            data = [...data.data];
-        } else if (isObject(data.data)) {
-            data = flatten({ ...data.data });
-        } else if (data.data === null) {
-            data = null;
-        } else {
-            data = flatten(data);
-        }
-
-        for (const key in data) {
-            data[key] = normalizeData(data[key]);
-        }
-
-        return data;
-    }
-
-    return data;
-};
+  axiosInstance,
+  generateFilter,
+  generateSort,
+  normalizeData,
+  transformHttpError,
+} from "./utils";
 
 export const DataProvider = (
-    apiUrl: string,
-    httpClient: AxiosInstance = axiosInstance,
-): IDataProvider => ({
-    getList: async ({ resource, pagination, filters, sort, metaData }) => {
-        const url = `${apiUrl}/${resource}`;
+  apiUrl: string,
+  httpClient: AxiosInstance = axiosInstance,
+): Required<IDataProvider> => ({
+  getList: async ({ resource, pagination, filters, sorters, meta }) => {
+    const url = `${apiUrl}/${resource}`;
 
-        const current = pagination?.current || 1;
-        const pageSize = pagination?.pageSize || 10;
-        const locale = metaData?.locale;
-        const fields = metaData?.fields;
-        const populate = metaData?.populate;
-        const publicationState = metaData?.publicationState;
+    const { current = 1, pageSize = 10, mode = "server" } = pagination ?? {};
 
-        const quertSorters = generateSort(sort);
-        const queryFilters = generateFilter(filters);
+    const locale = meta?.locale;
+    const fields = meta?.fields;
+    const populate = meta?.populate;
+    const publicationState = meta?.publicationState;
 
-        const query = {
+    const querySorters = generateSort(sorters);
+    const queryFilters = generateFilter(filters);
+
+    const query = {
+      ...(mode === "server"
+        ? {
             "pagination[page]": current,
             "pagination[pageSize]": pageSize,
-            locale,
-            publicationState,
-            fields,
-            populate,
-            sort: quertSorters.length > 0 ? quertSorters.join(",") : undefined,
-        };
+          }
+        : {}),
+      locale,
+      publicationState,
+      fields,
+      populate,
+      sort: querySorters.length > 0 ? querySorters.join(",") : undefined,
+    };
 
-        const { data } = await httpClient.get(
-            `${url}?${stringify(query, {
-                encodeValuesOnly: true,
-            })}&${queryFilters}`,
-        );
+    const { data } = await httpClient.get(
+      `${url}?${qs.stringify(query, {
+        encodeValuesOnly: true,
+      })}&${queryFilters}`,
+    );
 
-        return {
-            data: normalizeData(data),
-            total: data.meta.pagination.total,
-        };
-    },
+    return {
+      data: normalizeData(data),
+      // added to support pagination on client side when using endpoints that provide only data (see https://github.com/refinedev/refine/issues/2028)
+      total: data.meta?.pagination?.total || normalizeData(data)?.length,
+    };
+  },
 
-    getMany: async ({ resource, ids }) => {
-        const url = `${apiUrl}/${resource}`;
+  getMany: async ({ resource, ids, meta }) => {
+    const url = `${apiUrl}/${resource}`;
 
-        const query = ids
-            .map((item: string) => `filters[id][$in]=${item}`)
-            .join("&");
+    const locale = meta?.locale;
+    const fields = meta?.fields;
+    const populate = meta?.populate;
+    const publicationState = meta?.publicationState;
 
-        const { data } = await httpClient.get(`${url}?${query}`);
+    const queryFilters = generateFilter([
+      {
+        field: "id",
+        operator: "in",
+        value: ids,
+      },
+    ]);
 
-        return {
-            data: normalizeData(data),
-        };
-    },
+    const query = {
+      locale,
+      fields,
+      populate,
+      publicationState,
+      "pagination[pageSize]": ids.length,
+    };
 
-    create: async ({ resource, variables }) => {
-        const url = `${apiUrl}/${resource}`;
+    const { data } = await httpClient.get(
+      `${url}?${qs.stringify(query, {
+        encodeValuesOnly: true,
+      })}&${queryFilters}`,
+    );
 
-        let dataVariables: any = { data: variables };
+    return {
+      data: normalizeData(data),
+    };
+  },
 
-        if (resource === "users") {
-            dataVariables = variables;
-        }
+  create: async ({ resource, variables }) => {
+    const url = `${apiUrl}/${resource}`;
 
-        const { data } = await httpClient.post(url, dataVariables);
-        return {
-            data,
-        };
-    },
+    let dataVariables: any = { data: variables };
 
-    update: async ({ resource, id, variables }) => {
+    if (resource === "users") {
+      dataVariables = variables;
+    }
+
+    try {
+      const { data } = await httpClient.post(url, dataVariables);
+      return {
+        data,
+      };
+    } catch (error) {
+      const httpError = transformHttpError(error);
+
+      throw httpError;
+    }
+  },
+
+  update: async ({ resource, id, variables }) => {
+    const url = `${apiUrl}/${resource}/${id}`;
+
+    let dataVariables: any = { data: variables };
+
+    if (resource === "users") {
+      dataVariables = variables;
+    }
+
+    try {
+      const { data } = await httpClient.put(url, dataVariables);
+      return {
+        data,
+      };
+    } catch (error) {
+      const httpError = transformHttpError(error);
+
+      throw httpError;
+    }
+  },
+
+  updateMany: async ({ resource, ids, variables }) => {
+    const errors: HttpError[] = [];
+
+    const response = await Promise.all(
+      ids.map(async (id) => {
         const url = `${apiUrl}/${resource}/${id}`;
 
         let dataVariables: any = { data: variables };
 
         if (resource === "users") {
-            dataVariables = variables;
+          dataVariables = variables;
         }
 
-        const { data } = await httpClient.put(url, dataVariables);
-        return {
-            data,
-        };
-    },
+        try {
+          const { data } = await httpClient.put(url, dataVariables);
+          return data;
+        } catch (error) {
+          const httpError = transformHttpError(error);
 
-    updateMany: async ({ resource, ids, variables }) => {
-        const response = await Promise.all(
-            ids.map(async (id) => {
-                const url = `${apiUrl}/${resource}/${id}`;
+          errors.push(httpError);
+        }
+      }),
+    );
 
-                let dataVariables: any = { data: variables };
+    if (errors.length > 0) {
+      throw errors;
+    }
 
-                if (resource === "users") {
-                    dataVariables = variables;
-                }
-                const { data } = await httpClient.put(url, dataVariables);
-                return data;
-            }),
-        );
+    return { data: response };
+  },
 
-        return { data: response };
-    },
+  createMany: async ({ resource, variables }) => {
+    const errors: HttpError[] = [];
 
-    createMany: async ({ resource, variables }) => {
-        const response = await Promise.all(
-            variables.map(async (param) => {
-                const { data } = await httpClient.post(
-                    `${apiUrl}/${resource}`,
-                    {
-                        data: param,
-                    },
-                );
-                return data;
-            }),
-        );
+    const response = await Promise.all(
+      variables.map(async (param) => {
+        try {
+          const { data } = await httpClient.post(`${apiUrl}/${resource}`, {
+            data: param,
+          });
+          return data;
+        } catch (error) {
+          const httpError = transformHttpError(error);
 
-        return { data: response };
-    },
+          errors.push(httpError);
+        }
+      }),
+    );
 
-    getOne: async ({ resource, id, metaData }) => {
-        const locale = metaData?.locale;
-        const fields = metaData?.fields;
-        const populate = metaData?.populate;
+    if (errors.length > 0) {
+      throw errors;
+    }
 
-        const query = {
-            locale,
-            fields,
-            populate,
-        };
+    return { data: response };
+  },
 
-        const url = `${apiUrl}/${resource}/${id}?${stringify(query, {
-            encode: false,
+  getOne: async ({ resource, id, meta }) => {
+    const locale = meta?.locale;
+    const fields = meta?.fields;
+    const populate = meta?.populate;
+    const publicationState = meta?.publicationState;
+
+    const query = {
+      locale,
+      fields,
+      populate,
+      publicationState,
+    };
+
+    const url = `${apiUrl}/${resource}/${id}?${qs.stringify(query, {
+      encode: false,
+    })}`;
+
+    const { data } = await httpClient.get(url);
+
+    return {
+      data: normalizeData(data),
+    };
+  },
+
+  deleteOne: async ({ resource, id }) => {
+    const url = `${apiUrl}/${resource}/${id}`;
+
+    const { data } = await httpClient.delete(url);
+
+    return {
+      data,
+    };
+  },
+
+  deleteMany: async ({ resource, ids }) => {
+    const response = await Promise.all(
+      ids.map(async (id) => {
+        const { data } = await httpClient.delete(`${apiUrl}/${resource}/${id}`);
+        return data;
+      }),
+    );
+    return { data: response };
+  },
+
+  getApiUrl: () => {
+    return apiUrl;
+  },
+
+  custom: async ({
+    url,
+    method,
+    filters,
+    sorters,
+    payload,
+    query,
+    headers,
+  }) => {
+    let requestUrl = `${url}?`;
+
+    if (sorters) {
+      const sortQuery = generateSort(sorters);
+      if (sortQuery.length > 0) {
+        requestUrl = `${requestUrl}&${qs.stringify({
+          sort: sortQuery.join(","),
         })}`;
+      }
+    }
 
-        const { data } = await httpClient.get(url);
+    if (filters) {
+      const filterQuery = generateFilter(filters);
+      requestUrl = `${requestUrl}&${filterQuery}`;
+    }
 
-        return {
-            data: normalizeData(data),
-        };
-    },
+    if (query) {
+      requestUrl = `${requestUrl}&${qs.stringify(query)}`;
+    }
 
-    deleteOne: async ({ resource, id }) => {
-        const url = `${apiUrl}/${resource}/${id}`;
+    let axiosResponse;
+    switch (method) {
+      case "put":
+      case "post":
+      case "patch":
+        axiosResponse = await httpClient[method](url, payload, {
+          headers,
+        });
+        break;
+      case "delete":
+        axiosResponse = await httpClient.delete(url, {
+          data: payload,
+          headers: headers,
+        });
+        break;
+      default:
+        axiosResponse = await httpClient.get(requestUrl, { headers });
+        break;
+    }
 
-        const { data } = await httpClient.delete(url);
+    const { data } = axiosResponse;
 
-        return {
-            data,
-        };
-    },
-
-    deleteMany: async ({ resource, ids }) => {
-        const response = await Promise.all(
-            ids.map(async (id) => {
-                const { data } = await httpClient.delete(
-                    `${apiUrl}/${resource}/${id}`,
-                );
-                return data;
-            }),
-        );
-        return { data: response };
-    },
-
-    getApiUrl: () => {
-        return apiUrl;
-    },
-
-    custom: async ({ url, method, filters, sort, payload, query, headers }) => {
-        let requestUrl = `${url}?`;
-
-        if (sort) {
-            const sortQuery = generateSort(sort);
-            if (sortQuery.length > 0) {
-                requestUrl = `${requestUrl}&${stringify({
-                    sort: sortQuery.join(","),
-                })}`;
-            }
-        }
-
-        if (filters) {
-            const filterQuery = generateFilter(filters);
-            requestUrl = `${requestUrl}&${filterQuery}`;
-        }
-
-        if (query) {
-            requestUrl = `${requestUrl}&${stringify(query)}`;
-        }
-
-        if (headers) {
-            httpClient.defaults.headers = {
-                ...httpClient.defaults.headers,
-                ...headers,
-            };
-        }
-
-        let axiosResponse;
-        switch (method) {
-            case "put":
-            case "post":
-            case "patch":
-                axiosResponse = await httpClient[method](url, payload);
-                break;
-            case "delete":
-                axiosResponse = await httpClient.delete(url);
-                break;
-            default:
-                axiosResponse = await httpClient.get(requestUrl);
-                break;
-        }
-
-        const { data } = axiosResponse;
-
-        return Promise.resolve({ data });
-    },
+    return Promise.resolve({ data });
+  },
 });

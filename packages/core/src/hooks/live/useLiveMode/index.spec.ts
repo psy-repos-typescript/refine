@@ -1,42 +1,41 @@
-import { renderHook } from "@testing-library/react-hooks";
+import { renderHook } from "@testing-library/react";
 
+import { defaultRefineOptions } from "@contexts/refine";
 import { TestWrapper } from "@test";
 
+import type { IRefineContextProvider } from "../../../contexts/refine/types";
 import { useLiveMode } from "./";
-import { IRefineContextProvider } from "../../../interfaces";
 
 const mockRefineProvider: IRefineContextProvider = {
-    hasDashboard: false,
-    mutationMode: "pessimistic",
-    warnWhenUnsavedChanges: false,
-    syncWithLocation: false,
-    undoableTimeout: 500,
+  hasDashboard: false,
+  ...defaultRefineOptions,
+  options: defaultRefineOptions,
 };
 
 describe("useLiveMode Hook", () => {
-    it("context: auto, params: off -> returns off", async () => {
-        const { result } = renderHook(() => useLiveMode("off"), {
-            wrapper: TestWrapper({
-                refineProvider: {
-                    ...mockRefineProvider,
-                    liveMode: "auto",
-                },
-            }),
-        });
-
-        expect(result.current).toBe("off");
+  it("context: auto, params: off -> returns off", async () => {
+    const { result } = renderHook(() => useLiveMode("off"), {
+      wrapper: TestWrapper({
+        refineProvider: {
+          ...mockRefineProvider,
+          liveMode: "auto",
+        },
+      }),
     });
 
-    it("returns context value", async () => {
-        const { result } = renderHook(() => useLiveMode(undefined), {
-            wrapper: TestWrapper({
-                refineProvider: {
-                    ...mockRefineProvider,
-                    liveMode: "auto",
-                },
-            }),
-        });
+    expect(result.current).toBe("off");
+  });
 
-        expect(result.current).toBe("auto");
+  it("returns context value", async () => {
+    const { result } = renderHook(() => useLiveMode(undefined), {
+      wrapper: TestWrapper({
+        refineProvider: {
+          ...mockRefineProvider,
+          liveMode: "auto",
+        },
+      }),
     });
+
+    expect(result.current).toBe("auto");
+  });
 });

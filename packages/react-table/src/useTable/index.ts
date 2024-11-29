@@ -1,135 +1,177 @@
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import {
-    BaseRecord,
-    CrudFilters,
-    CrudOperators,
-    HttpError,
-    useTable as useTableCore,
-    useTableProps as useTablePropsCore,
-} from "@pankod/refine-core";
-import { useTable as useTableRT, PluginHook, TableOptions } from "react-table";
+  type BaseRecord,
+  ConditionalFilter,
+  type CrudFilter,
+  CrudOperators,
+  type HttpError,
+  LogicalFilter,
+  useTable as useTableCore,
+  type useTableProps as useTablePropsCore,
+  type useTableReturnType as useTableReturnTypeCore,
+} from "@refinedev/core";
+import {
+  useReactTable,
+  type TableOptions,
+  type Table,
+  getCoreRowModel,
+  ColumnFilter,
+  getSortedRowModel,
+  getFilteredRowModel,
+} from "@tanstack/react-table";
 
-export type UseTableReturnType = ReturnType<typeof useTableRT> & {
-    refineCore: ReturnType<typeof useTableCore>;
+import {
+  useIsFirstRender,
+  columnFiltersToCrudFilters,
+  getRemovedFilters,
+  crudFiltersToColumnFilters,
+} from "../utils";
+
+export type UseTableReturnType<
+  TData extends BaseRecord = BaseRecord,
+  TError extends HttpError = HttpError,
+> = Table<TData> & {
+  refineCore: useTableReturnTypeCore<TData, TError>;
 };
 
 export type UseTableProps<
-    TData extends BaseRecord = BaseRecord,
-    TError extends HttpError = HttpError,
+  TQueryFnData extends BaseRecord = BaseRecord,
+  TError extends HttpError = HttpError,
+  TData extends BaseRecord = TQueryFnData,
 > = {
-    refineCoreProps?: useTablePropsCore<TData, TError>;
-} & TableOptions<{}>;
+  /**
+   * Configuration object for the core of the [useTable](/docs/api-reference/core/hooks/useTable/)
+   * @type [`useTablePropsCore<TQueryFnData, TError>`](/docs/api-reference/core/hooks/useTable/#properties)
+   */
+  refineCoreProps?: useTablePropsCore<TQueryFnData, TError, TData>;
+} & Pick<TableOptions<TData>, "columns"> &
+  Partial<Omit<TableOptions<TData>, "columns">>;
 
-export const useTable = <
-    TData extends BaseRecord = BaseRecord,
-    TError extends HttpError = HttpError,
->(
-    { refineCoreProps, ...rest }: UseTableProps<TData, TError>,
-    ...plugins: Array<PluginHook<{}>>
-): UseTableReturnType => {
-    const useTableResult = useTableCore<TData, TError>({
-        ...refineCoreProps,
+export function useTable<
+  TQueryFnData extends BaseRecord = BaseRecord,
+  TError extends HttpError = HttpError,
+  TData extends BaseRecord = TQueryFnData,
+>({
+  refineCoreProps: { hasPagination = true, ...refineCoreProps } = {},
+  initialState: reactTableInitialState = {},
+  ...rest
+}: UseTableProps<TQueryFnData, TError, TData>): UseTableReturnType<
+  TData,
+  TError
+> {
+  const isFirstRender = useIsFirstRender();
+
+  const useTableResult = useTableCore<TQueryFnData, TError, TData>({
+    ...refineCoreProps,
+    hasPagination,
+  });
+
+  const isServerSideFilteringEnabled =
+    (refineCoreProps.filters?.mode || "server") === "server";
+  const isServerSideSortingEnabled =
+    (refineCoreProps.sorters?.mode || "server") === "server";
+  const hasPaginationString = hasPagination === false ? "off" : "server";
+  const isPaginationEnabled =
+    (refineCoreProps.pagination?.mode ?? hasPaginationString) !== "off";
+
+  const {
+    tableQuery: { data },
+    current,
+    setCurrent,
+    pageSize: pageSizeCore,
+    setPageSize: setPageSizeCore,
+    sorters,
+    setSorters,
+    filters: filtersCore,
+    setFilters,
+    pageCount,
+  } = useTableResult;
+
+  const reactTableResult = useReactTable<TData>({
+    data: data?.data ?? [],
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: isServerSideSortingEnabled
+      ? undefined
+      : getSortedRowModel(),
+    getFilteredRowModel: isServerSideFilteringEnabled
+      ? undefined
+      : getFilteredRowModel(),
+    initialState: {
+      pagination: {
+        pageIndex: current - 1,
+        pageSize: pageSizeCore,
+      },
+      sorting: sorters.map((sorting) => ({
+        id: sorting.field,
+        desc: sorting.order === "desc",
+      })),
+      columnFilters: crudFiltersToColumnFilters({
+        columns: rest.columns,
+        crudFilters: filtersCore,
+      }),
+      ...reactTableInitialState,
+    },
+    pageCount,
+    manualPagination: true,
+    manualSorting: isServerSideSortingEnabled,
+    manualFiltering: isServerSideFilteringEnabled,
+    ...rest,
+  });
+
+  const { state, columns } = reactTableResult.options;
+  const { pagination, sorting, columnFilters } = state;
+
+  const { pageIndex, pageSize } = pagination ?? {};
+
+  useEffect(() => {
+    if (pageIndex !== undefined) {
+      setCurrent(pageIndex + 1);
+    }
+  }, [pageIndex]);
+
+  useEffect(() => {
+    if (pageSize !== undefined) {
+      setPageSizeCore(pageSize);
+    }
+  }, [pageSize]);
+
+  useEffect(() => {
+    if (sorting !== undefined) {
+      setSorters(
+        sorting?.map((sorting) => ({
+          field: sorting.id,
+          order: sorting.desc ? "desc" : "asc",
+        })),
+      );
+
+      if (sorting.length > 0 && isPaginationEnabled && !isFirstRender) {
+        setCurrent(1);
+      }
+    }
+  }, [sorting]);
+
+  useEffect(() => {
+    const crudFilters: CrudFilter[] = columnFiltersToCrudFilters({
+      columns,
+      columnFilters,
     });
 
-    const {
-        tableQueryResult: { data },
-        current,
-        setCurrent,
-        pageSize: pageSizeCore,
-        setPageSize: setPageSizeCore,
-        sorter,
-        setSorter,
-        filters: filtersCore,
-        setFilters,
-    } = useTableResult;
-
-    const memoizedData = useMemo(() => data?.data ?? [], [data]);
-    const reactTableResult = useTableRT(
-        {
-            data: memoizedData,
-            initialState: {
-                pageIndex: current - 1,
-                pageSize: pageSizeCore,
-                sortBy: sorter.map((sorting) => ({
-                    id: sorting.field,
-                    desc: sorting.order === "desc",
-                })),
-                filters: filtersCore.map((filter) => ({
-                    id: filter.field,
-                    value: filter.value,
-                })),
-            },
-            pageCount: Math.ceil((data?.total || 0) / pageSizeCore),
-            manualPagination: true,
-            manualSortBy: true,
-            manualFilters: true,
-            ...rest,
-        },
-        ...plugins,
+    crudFilters.push(
+      ...getRemovedFilters({
+        nextFilters: crudFilters,
+        coreFilters: filtersCore,
+      }),
     );
 
-    const { pageIndex, pageSize, sortBy, filters } = reactTableResult.state;
-    useEffect(() => {
-        setCurrent(pageIndex + 1);
-    }, [pageIndex]);
+    setFilters(crudFilters);
 
-    useEffect(() => {
-        setPageSizeCore(pageSize);
-    }, [pageSize]);
+    if (crudFilters.length > 0 && isPaginationEnabled && !isFirstRender) {
+      setCurrent(1);
+    }
+  }, [columnFilters, columns]);
 
-    useEffect(() => {
-        setSorter(
-            sortBy?.map((sorting) => ({
-                field: sorting.id,
-                order: sorting.desc ? "desc" : "asc",
-            })),
-        );
-        if (sortBy?.length) {
-            setCurrent(1);
-        }
-    }, [sortBy]);
-
-    useEffect(() => {
-        const crudFilters: CrudFilters = [];
-
-        filters?.map((filter) => {
-            const operator = reactTableResult.columns.find(
-                (c) => c.id === filter.id,
-            )?.filter as CrudOperators;
-
-            crudFilters.push({
-                field: filter.id,
-                operator:
-                    operator ?? (Array.isArray(filter.value) ? "in" : "eq"),
-                value: filter.value,
-            });
-        });
-
-        const filteredArray = filtersCore.filter(
-            (value) =>
-                !crudFilters.some(
-                    (b) =>
-                        value.field === b.field &&
-                        value.operator === b.operator,
-                ),
-        );
-
-        filteredArray?.map((filter) => {
-            crudFilters.push({
-                field: filter.field,
-                operator: filter.operator,
-                value: undefined,
-            });
-        });
-
-        setFilters(crudFilters);
-        if (crudFilters.length > 0) {
-            setCurrent(1);
-        }
-    }, [filters]);
-
-    return {
-        ...reactTableResult,
-        refineCore: useTableResult,
-    };
-};
+  return {
+    ...reactTableResult,
+    refineCore: useTableResult,
+  };
+}

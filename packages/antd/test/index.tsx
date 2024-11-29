@@ -1,79 +1,106 @@
-import React from "react";
-import { MemoryRouter } from "react-router-dom";
+import React, { type ReactNode } from "react";
+import { BrowserRouter } from "react-router-dom";
 
-import { Refine } from "@pankod/refine-core";
+import {
+  type AccessControlProvider,
+  type AuthProvider,
+  type LegacyAuthProvider,
+  type NotificationProvider,
+  Refine,
+  type I18nProvider,
+  type DataProvider,
+  type IResourceItem,
+  type RouterBindings,
+  type IRefineOptions,
+} from "@refinedev/core";
 
 import { MockRouterProvider, MockJSONServer } from "@test";
-import {
-    I18nProvider,
-    IAccessControlContext,
-    IAuthContext,
-    IDataContext,
-    INotificationContext,
-    ResourceProps,
-} from "@pankod/refine-core/dist/interfaces";
-
-/* interface ITestWrapperProps {
-    authProvider?: IAuthContext;
-    dataProvider?: IDataContext;
-    i18nProvider?: I18nProvider;
-    accessControlProvider?: IAccessControlContext;
-    liveProvider?: ILiveContext;
-    resources?: IResourceItem[];
-    children?: React.ReactNode;
-    routerInitialEntries?: string[];
-    refineProvider?: IRefineContextProvider;
-} */
 
 const List = () => {
-    return <div>hede</div>;
+  return <div>hede</div>;
 };
-interface ITestWrapperProps {
-    dataProvider?: IDataContext;
-    authProvider?: IAuthContext;
-    resources?: ResourceProps[];
-    notificationProvider?: INotificationContext;
-    accessControlProvider?: IAccessControlContext;
-    i18nProvider?: I18nProvider;
-    routerInitialEntries?: string[];
-    DashboardPage?: React.FC;
+export interface ITestWrapperProps {
+  dataProvider?: DataProvider;
+  routerProvider?: RouterBindings;
+  authProvider?: AuthProvider;
+  legacyAuthProvider?: LegacyAuthProvider;
+  resources?: IResourceItem[];
+  notificationProvider?: NotificationProvider;
+  accessControlProvider?: AccessControlProvider;
+  i18nProvider?: I18nProvider;
+  routerInitialEntries?: string[];
+  DashboardPage?: React.FC;
+  options?: IRefineOptions;
 }
 
-export const TestWrapper: (props: ITestWrapperProps) => React.FC = ({
-    dataProvider,
-    authProvider,
-    resources,
-    notificationProvider,
-    accessControlProvider,
-    routerInitialEntries,
-    DashboardPage,
-    i18nProvider,
+export const TestWrapper: (
+  props: ITestWrapperProps,
+) => React.FC<{ children?: ReactNode }> = ({
+  dataProvider,
+  authProvider,
+  routerProvider,
+  legacyAuthProvider,
+  resources,
+  notificationProvider,
+  accessControlProvider,
+  routerInitialEntries,
+  DashboardPage,
+  i18nProvider,
+  options,
 }) => {
-    // eslint-disable-next-line react/display-name
-    return ({ children }): React.ReactElement => {
-        return (
-            <MemoryRouter initialEntries={routerInitialEntries}>
-                <Refine
-                    dataProvider={dataProvider ?? MockJSONServer}
-                    i18nProvider={i18nProvider}
-                    routerProvider={MockRouterProvider}
-                    authProvider={authProvider}
-                    notificationProvider={notificationProvider}
-                    resources={resources ?? [{ name: "posts", list: List }]}
-                    accessControlProvider={accessControlProvider}
-                    DashboardPage={DashboardPage ?? null}
-                >
-                    {children}
-                </Refine>
-            </MemoryRouter>
-        );
-    };
+  // Previously, MemoryRouter was used in this wrapper. However, the
+  // recommendation by react-router developers (see
+  // https://github.com/remix-run/react-router/discussions/8241#discussioncomment-159686)
+  // is essentially to use the same router as your actual application. Besides
+  // that, it's impossible to check for location changes with MemoryRouter if
+  // needed.
+  if (routerInitialEntries) {
+    routerInitialEntries.forEach((route) => {
+      window.history.replaceState({}, "", route);
+    });
+  }
+
+  return ({ children }): React.ReactElement => {
+    return (
+      <BrowserRouter>
+        <Refine
+          dataProvider={dataProvider ?? MockJSONServer}
+          i18nProvider={i18nProvider}
+          legacyRouterProvider={routerProvider ? undefined : MockRouterProvider}
+          routerProvider={routerProvider}
+          authProvider={authProvider}
+          legacyAuthProvider={legacyAuthProvider}
+          notificationProvider={notificationProvider}
+          resources={resources ?? [{ name: "posts", list: List }]}
+          accessControlProvider={accessControlProvider}
+          DashboardPage={DashboardPage ?? undefined}
+          options={{
+            ...options,
+            disableTelemetry: true,
+            reactQuery: {
+              clientConfig: {
+                defaultOptions: {
+                  queries: {
+                    cacheTime: 0,
+                    staleTime: 0,
+                    networkMode: "always",
+                  },
+                },
+              },
+            },
+          }}
+        >
+          {children}
+        </Refine>
+      </BrowserRouter>
+    );
+  };
 };
 export {
-    MockJSONServer,
-    MockRouterProvider,
-    MockAccessControlProvider,
-    MockLiveProvider,
+  MockJSONServer,
+  MockRouterProvider,
+  MockAccessControlProvider,
+  MockLiveProvider,
 } from "./dataMocks";
 
 // re-export everything

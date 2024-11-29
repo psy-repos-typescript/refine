@@ -1,101 +1,105 @@
-import { RadioGroupProps } from "antd/lib/radio";
-import { QueryObserverResult, UseQueryOptions } from "react-query";
+import type { QueryObserverResult } from "@tanstack/react-query";
+import type { Radio } from "antd";
 
 import {
-    CrudSorting,
-    BaseRecord,
-    GetListResponse,
-    CrudFilters,
-    SuccessErrorNotification,
-    HttpError,
-    MetaDataQuery,
-    LiveModeProps,
-    useList,
-    Option,
-} from "@pankod/refine-core";
-import { useState } from "react";
+  type BaseKey,
+  type BaseOption,
+  type BaseRecord,
+  type GetListResponse,
+  type HttpError,
+  pickNotDeprecated,
+  useSelect,
+  type UseSelectProps,
+} from "@refinedev/core";
 
-export type useRadioGroupProps<TData, TError> = RadioGroupProps & {
-    resource: string;
-    optionLabel?: string;
-    optionValue?: string;
-    sort?: CrudSorting;
-    filters?: CrudFilters;
-    queryOptions?: UseQueryOptions<GetListResponse<TData>, TError>;
-    metaData?: MetaDataQuery;
-    dataProviderName?: string;
-} & SuccessErrorNotification &
-    LiveModeProps;
+export type UseRadioGroupReturnType<
+  TData extends BaseRecord = BaseRecord,
+  TOption extends BaseOption = BaseOption,
+> = {
+  radioGroupProps: Omit<React.ComponentProps<typeof Radio.Group>, "options"> & {
+    options: TOption[];
+  };
+  query: QueryObserverResult<GetListResponse<TData>>;
+  /**
+   * @deprecated Use `query` instead
+   */
+  queryResult: QueryObserverResult<GetListResponse<TData>>;
+};
 
-export type UseRadioGroupReturnType<TData extends BaseRecord = BaseRecord> = {
-    radioGroupProps: RadioGroupProps;
-    queryResult: QueryObserverResult<GetListResponse<TData>>;
+type UseRadioGroupProps<TQueryFnData, TError, TData> = Omit<
+  UseSelectProps<TQueryFnData, TError, TData>,
+  "defaultValue"
+> & {
+  /**
+   * Sets the default value
+   */
+  defaultValue?: BaseKey;
 };
 
 /**
  * `useRadioGroup` hook allows you to manage an Ant Design {@link https://ant.design/components/radio/#components-radio-demo-radiogroup-with-name Radio.Group} component when records in a resource needs to be used as radio options.
  *
- * @see {@link https://refine.dev/docs/ui-frameworks/antd/hooks/field/useRadioGroup} for more details.
+ * @see {@link https://refine.dev/docs/api-reference/antd/hooks/field/useRadioGroup/} for more details.
  *
- * @typeParam TData - Result data of the query extends {@link https://refine.dev/docs/core/interfaceReferences#baserecord `BaseRecord`}
+ * @typeParam TQueryFnData - Result data returned by the query function. Extends {@link https://refine.dev/docs/api-reference/core/interfaceReferences#baserecord `BaseRecord`}
+ * @typeParam TError - Custom error object that extends {@link https://refine.dev/docs/api-reference/core/interfaceReferences#httperror `HttpError`}
+ * @typeParam TData - Result data returned by the `select` function. Extends {@link https://refine.dev/docs/api-reference/core/interfaceReferences#baserecord `BaseRecord`}. Defaults to `TQueryFnData`
  *
  */
 
 export const useRadioGroup = <
-    TData extends BaseRecord = BaseRecord,
-    TError extends HttpError = HttpError,
+  TQueryFnData extends BaseRecord = BaseRecord,
+  TError extends HttpError = HttpError,
+  TData extends BaseRecord = TQueryFnData,
+  TOption extends BaseOption = BaseOption,
 >({
+  resource,
+  sort,
+  sorters,
+  filters,
+  optionLabel,
+  optionValue,
+  queryOptions,
+  fetchSize,
+  pagination,
+  liveMode,
+  defaultValue,
+  selectedOptionsOrder,
+  onLiveEvent,
+  liveParams,
+  meta,
+  metaData,
+  dataProviderName,
+}: UseRadioGroupProps<TQueryFnData, TError, TData>): UseRadioGroupReturnType<
+  TData,
+  TOption
+> => {
+  const { query, options } = useSelect<TQueryFnData, TError, TData, TOption>({
     resource,
     sort,
+    sorters,
     filters,
-    optionLabel = "title",
-    optionValue = "id",
-    successNotification,
-    errorNotification,
+    optionLabel,
+    optionValue,
     queryOptions,
+    fetchSize,
+    pagination,
     liveMode,
+    defaultValue,
+    selectedOptionsOrder,
     onLiveEvent,
     liveParams,
-    metaData,
+    meta: pickNotDeprecated(meta, metaData),
+    metaData: pickNotDeprecated(meta, metaData),
     dataProviderName,
-}: useRadioGroupProps<TData, TError>): UseRadioGroupReturnType<TData> => {
-    const [options, setOptions] = useState<Option[]>([]);
+  });
 
-    const defaultQueryOnSuccess = (data: GetListResponse<TData>) => {
-        setOptions(() =>
-            data.data.map((item) => ({
-                label: item[optionLabel],
-                value: item[optionValue],
-            })),
-        );
-    };
-
-    const queryResult = useList<TData, TError>({
-        resource,
-        config: {
-            sort,
-            filters,
-        },
-        queryOptions: {
-            ...queryOptions,
-            onSuccess: (data) => {
-                defaultQueryOnSuccess(data);
-                queryOptions?.onSuccess?.(data);
-            },
-        },
-        successNotification,
-        errorNotification,
-        liveMode,
-        onLiveEvent,
-        liveParams,
-        metaData,
-        dataProviderName,
-    });
-
-    return {
-        radioGroupProps: {
-            options,
-        },
-        queryResult,
-    };
+  return {
+    radioGroupProps: {
+      options,
+      defaultValue,
+    },
+    query,
+    queryResult: query,
+  };
 };

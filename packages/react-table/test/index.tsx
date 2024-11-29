@@ -1,38 +1,36 @@
-import React from "react";
+import React, { type ReactNode } from "react";
 import { MemoryRouter } from "react-router-dom";
-import { Refine } from "@pankod/refine-core";
-import {
-    IDataContext,
-    ResourceProps,
-} from "@pankod/refine-core/dist/interfaces";
+import { Refine, type DataProvider, type IResourceItem } from "@refinedev/core";
 
 import { MockRouterProvider, MockJSONServer } from "./dataMocks";
 
 interface ITestWrapperProps {
-    dataProvider?: IDataContext;
-    resources?: ResourceProps[];
-    routerInitialEntries?: string[];
+  dataProvider?: DataProvider;
+  resources?: IResourceItem[];
+  routerInitialEntries?: string[];
 }
 
-export const TestWrapper: (props: ITestWrapperProps) => React.FC = ({
-    dataProvider,
-    resources,
-    routerInitialEntries,
+export const TestWrapper: (
+  props: ITestWrapperProps,
+) => React.FC<{ children: ReactNode }> = ({
+  dataProvider,
+  resources,
+  routerInitialEntries,
 }) => {
-    // eslint-disable-next-line react/display-name
-    return ({ children }): React.ReactElement => {
-        return (
-            <MemoryRouter initialEntries={routerInitialEntries}>
-                <Refine
-                    dataProvider={dataProvider ?? MockJSONServer}
-                    routerProvider={MockRouterProvider}
-                    resources={resources ?? [{ name: "posts" }]}
-                >
-                    {children}
-                </Refine>
-            </MemoryRouter>
-        );
-    };
+  return ({ children }): React.ReactElement => {
+    return (
+      <MemoryRouter initialEntries={routerInitialEntries}>
+        <Refine
+          dataProvider={dataProvider ?? MockJSONServer}
+          legacyRouterProvider={MockRouterProvider}
+          resources={resources ?? [{ name: "posts" }]}
+          options={{ disableTelemetry: true }}
+        >
+          {children}
+        </Refine>
+      </MemoryRouter>
+    );
+  };
 };
 export { MockJSONServer, MockRouterProvider } from "./dataMocks";
 

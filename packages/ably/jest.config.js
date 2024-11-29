@@ -1,6 +1,6 @@
 module.exports = {
-    preset: "ts-jest",
-    rootDir: "./",
-    name: "ably",
-    displayName: "ably",
+  preset: "ts-jest",
+  rootDir: "./",
+  displayName: "ably",
+  testEnvironment: "jsdom",
 };

@@ -1,24 +1,29 @@
 ---
 title: Build Fast and Customizable Admin Panel with NestJS
-description: We will prepare a simple `job-posting` application. We will also use the refine framework for the admin panel. The project will consist of two parts, api and admin.
+description: We will prepare a simple `job-posting` application. We will also use the Refine framework for the admin panel. The project will consist of two parts, api and admin.
 slug: customizable-admin-panel-with-nestjs
 authors: yildiray
-tags: [refine, nestjs, crud, react]
-image: https://refine.dev/img/refine_social.png
+tags: [Refine, nestjs, react, tutorial]
+image: https://refine.ams3.cdn.digitaloceanspaces.com/website/static/img/placeholder.png
 hide_table_of_contents: false
 ---
 
-import api from '@site/static/img/blog/2021-10-4-admin-panel-with-nestjs/api.png';
-import refine_sample from '@site/static/img/blog/2021-10-4-admin-panel-with-nestjs/refine_sample.png';
-import refine_job from '@site/static/img/blog/2021-10-4-admin-panel-with-nestjs/refine_job.png';
+:::caution
 
-In this article, we will prepare a simple `job-posting` application. We will also use the [refine](https://github.com/pankod/refine) framework for the **admin panel**. The project will consist of two parts, api and admin.
+This post was created using version 3.x.x of **Refine**. Although we plan to update it with the latest version of **Refine** as soon as possible, you can still benefit from the post in the meantime.
+
+You should know that **Refine** version 4.x.x is backward compatible with version 3.x.x, so there is no need to worry. If you want to see the differences between the two versions, check out the [migration guide](https://refine.dev/docs/migration-guide/).
+
+:::
+
+In this article, we will prepare a simple `job-posting` application. We will also use the [Refine](https://github.com/refinedev/refine) framework for the **admin panel**. The project will consist of two parts, api and admin.
 
 <!--truncate-->
 
-All the steps described are in this [repo](https://github.com/pankod/refine/tree/master/examples/blog/jobPosting).
+All the steps described are in this [repo](https://github.com/refinedev/refine/tree/master/examples/blog-job-posting).
 
 ## Intro
+
 [NestJS](https://github.com/nestjs/nest) is a framework for building efficient, scalable Node.js server-side applications. With [nestjsx/crud](https://github.com/nestjsx/crud) we can add CRUD functions quickly and effortlessly on this framework.
 
 ## NestJS Rest Api
@@ -47,10 +52,11 @@ To start with this library we have to install all required dependencies:
 npm install --save @nestjs/typeorm @nestjs/config typeorm mysql2
 ```
 
-- Create an [.env.example](https://github.com/pankod/refine-hackathon/tree/main/job-posting-app/blob/master/api/.env.example) file. Here we will save the database information.
-- Create and configured a [docker-compose](https://github.com/pankod/refine-hackathon/tree/main/job-posting-app/blob/master/api/docker-compose.yml) file for MySQL.
-- Create a [ormconfig.ts](https://github.com/pankod/refine-hackathon/tree/main/job-posting-app/blob/master/api/ormconfig.ts) file for migrations.
+- Create an [.env.example](https://github.com/refinedev/refine-hackathon/tree/main/job-posting-app/blob/master/api/.env.example) file. Here we will save the database information.
+- Create and configured a [docker-compose](https://github.com/refinedev/refine-hackathon/tree/main/job-posting-app/blob/master/api/docker-compose.yml) file for MySQL.
+- Create a [ormconfig.ts](https://github.com/refinedev/refine-hackathon/tree/main/job-posting-app/blob/master/api/ormconfig.ts) file for migrations.
 - Add the following scripts to the `package.json` file for migrations.
+
 ```bash
 "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
 "db:migration:generate": "npm run typeorm -- migration:generate",
@@ -58,6 +64,7 @@ npm install --save @nestjs/typeorm @nestjs/config typeorm mysql2
 "db:migration:revert": "npm run typeorm -- migration:revert",
 "db:refresh": "npm run typeorm schema:drop && npm run db:migration:run"
 ```
+
 - Import the `TypeOrmModule` into the `app.module.ts`
 
 **Install nestjsx-crud**
@@ -67,39 +74,35 @@ I used [nestjsx-crud](https://github.com/nestjsx/crud) library because it makes 
 npm i @nestjsx/crud @nestjsx/crud-typeorm class-transformer class-validator
 ```
 
-*Since the steps to create Entities Contorllers, and services are very long, I do not explain step by step. You can check the [repo](https://github.com/pankod/refine-hackathon/tree/main/job-posting-app) for details.*
+_Since the steps to create Entities Controllers, and services are very long, I do not explain step by step. You can check the [repo](https://github.com/refinedev/refine-hackathon/tree/main/job-posting-app) for details._
 
 It created these end-points automatically with nestjsx/crud.
 
-<div class="img-container">
-    <div class="window">
-        <div class="control red"></div>
-        <div class="control orange"></div>
-        <div class="control green"></div>
-    </div>
-    <img src={api} alt="api" />
-</div>
+<img src="https://refine.ams3.cdn.digitaloceanspaces.com/blog/2021-10-4-admin-panel-with-nestjs/api.png" alt="api" />
 <br />
 
 ## Refine Admin Panel
 
-**Now let's refine the admin panel.** With [Superplate](https://pankod.github.io/superplate/docs), we can quickly create a `refine` project.
+**Now let's Refine the admin panel.** With [Superplate](https://pankod.github.io/superplate/docs), we can quickly create a `refine` project.
 
 ```bash
-npx superplate-cli admin
+npm create refine-app@latest admin -- -b v3
 ```
 
 Answer as below:
 
 ```
-✔ Select your project type › refine
+✔ Select your project type › refine-react
 ✔ What will be the name of your app · admin
-✔ Do you want to customize theme?: · less
-✔ Data Provider: · nestjsx-crud-data-provider
-✔ Auth Provider: · none
-✔ Do you want to add an example page? · example-resource
-✔ Do you want to customize layout? · custom-layout
-✔ i18n - Internationalization: · no
+✔ Package manager: · Npm
+✔ Do you want to use a UI Framework? · Ant Design
+✔ Do you want a customized theme?: · Yes (Custom Variables)
+✔ Router Provider: · React Router v6
+✔ Data Provider: · nestjsx-crud
+✔ Auth Provider: · None
+✔ Do you want to add example pages? · Yes (Recommended)
+✔ Do you want a customized layout? · Yes
+✔ i18n - Internationalization: · No
 ```
 
 ```bash
@@ -109,23 +112,16 @@ npm run dev
 
 Refine's sample application will welcome you.
 
-<div class="img-container">
-    <div class="window">
-        <div class="control red"></div>
-        <div class="control orange"></div>
-        <div class="control green"></div>
-    </div>
-    <img src={refine_sample} alt="refine_sample" />
-</div>
+<img src="https://refine.ams3.cdn.digitaloceanspaces.com/blog/2021-10-4-admin-panel-with-nestjs/refine_sample.png" alt="refine_sample" />
 <br />
 
-Change api url in [admin/src/App.tsx](https://github.com/pankod/refine-hackathon/tree/main/job-posting-app/blob/master/admin/src/App.tsx)
+Change api url in [admin/src/App.tsx](https://github.com/refinedev/refine-hackathon/tree/main/job-posting-app/blob/master/admin/src/App.tsx)
 
 ```
 const API_URL = "http://localhost:3000";
 ```
 
-Let's add the listing page in refine for the `companies` crud end-point.
+Let's add the listing page in Refine for the `companies` crud end-point.
 
 ```tsx title="/admin/src/pages/companies/list.tsx"
 import {
@@ -145,12 +141,14 @@ import { ICompany } from "interfaces";
 
 export const CompanyList: React.FC<IResourceComponentsProps> = () => {
   const { tableProps, sorter } = useTable<ICompany>({
-    initialSorter: [
-      {
-        field: "id",
-        order: "desc",
-      },
-    ],
+    sorters: {
+      initial: [
+        {
+          field: "id",
+          order: "desc",
+        },
+      ],
+    },
   });
 
   return (
@@ -212,7 +210,7 @@ Next, let's define the resources in `<Refine>` (App.tsx):
 ```tsx
 import { Refine } from "@pankod/refine";
 import routerProvider from "@pankod/refine-react-router";
-import nestjsxCrudDataProvider from "@pankod/refine-nestjsx-crud";
+import nestjsxCrudDataProvider from "@refinedev/nestjsx-crud";
 
 import "styles/antd.less";
 
@@ -265,12 +263,5 @@ function App() {
         />
 ```
 
-<div class="img-container">
-    <div class="window">
-        <div class="control red"></div>
-        <div class="control orange"></div>
-        <div class="control green"></div>
-    </div>
-    <img src={refine_job} alt="refine_job" />
-</div>
+<img src="https://refine.ams3.cdn.digitaloceanspaces.com/blog/2021-10-4-admin-panel-with-nestjs/refine_job.png" alt="refine_job" />
 <br />

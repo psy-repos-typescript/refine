@@ -1,23 +1,38 @@
 import { dataProvider } from "../../src/index";
-import client from "../appwriteClient";
+import { client } from "../appwriteClient";
 import "./index.mock";
 
 describe("create", () => {
-    fit("correct response with metaData", async () => {
-        const { data } = await dataProvider(client).create({
-            resource: "6180e6efb14df",
-            variables: {
-                title: "Lorem ipsum dolor",
-            },
-            metaData: {
-                readPermissions: ["role:all"],
-                writePermissions: ["role:all"],
-            },
-        });
-
-        console.log(data);
-
-        expect(data.title).toEqual("Lorem ipsum dolor");
-        expect(data.id).toBeTruthy();
+  it("correct response with meta", async () => {
+    const { data } = await dataProvider(client, {
+      databaseId: "default",
+    }).create({
+      resource: "blog_posts",
+      variables: {
+        title: "Lorem Ipsum",
+      },
+      meta: {
+        documentId: "unique()",
+      },
     });
+
+    expect(data.title).toEqual("Lorem Ipsum");
+    expect(data.id).toBeTruthy();
+  });
+  it("should respect meta.documentId", async () => {
+    const { data } = await dataProvider(client, {
+      databaseId: "default",
+    }).create({
+      resource: "blog_posts",
+      variables: {
+        title: "Lorem Ipsum",
+      },
+      meta: {
+        documentId: "lorem_ipsum",
+      },
+    });
+
+    expect(data.title).toEqual("Lorem Ipsum");
+    expect(data.id).toEqual("lorem_ipsum");
+  });
 });

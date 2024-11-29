@@ -1,35 +1,34 @@
+import { useActiveAuthProvider, useGetIdentity } from "@refinedev/core";
+import { Avatar, Layout as AntdLayout, Space, Typography } from "antd";
 import React from "react";
-import { Layout, Typography, Avatar, Space } from "antd";
-import { useGetIdentity } from "@pankod/refine-core";
+import type { RefineLayoutHeaderProps } from "../types";
 
-const { Text } = Typography;
+export const Header: React.FC<RefineLayoutHeaderProps> = () => {
+  const authProvider = useActiveAuthProvider();
+  const { data: user } = useGetIdentity({
+    v3LegacyAuthProviderCompatible: Boolean(authProvider?.isLegacy),
+  });
 
-export const Header: React.FC = () => {
-    const { data: user } = useGetIdentity();
+  const shouldRenderHeader = user && (user.name || user.avatar);
 
-    const shouldRenderHeader = user && (user.name || user.avatar);
-
-    return shouldRenderHeader ? (
-        <Layout.Header
-            style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                alignItems: "center",
-                padding: "0px 24px",
-                height: "64px",
-                backgroundColor: "#FFF",
-            }}
-        >
-            <Space>
-                {user.name && (
-                    <Text ellipsis strong>
-                        {user.name}
-                    </Text>
-                )}
-                {user.avatar && (
-                    <Avatar size="large" src={user?.avatar} alt={user?.name} />
-                )}
-            </Space>
-        </Layout.Header>
-    ) : null;
+  return shouldRenderHeader ? (
+    <AntdLayout.Header
+      style={{
+        display: "flex",
+        justifyContent: "flex-end",
+        alignItems: "center",
+        padding: "0px 24px",
+        height: "64px",
+      }}
+    >
+      <Space style={{ marginLeft: "8px" }}>
+        {user?.name && (
+          <Typography.Text style={{ color: "white" }} strong>
+            {user.name}
+          </Typography.Text>
+        )}
+        {user?.avatar && <Avatar src={user?.avatar} alt={user?.name} />}
+      </Space>
+    </AntdLayout.Header>
+  ) : null;
 };

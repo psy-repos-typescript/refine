@@ -1,40 +1,37 @@
 import React from "react";
-import { Row, Button } from "antd";
+import { Button } from "antd";
+import { pageReadyTests } from "@refinedev/ui-tests";
 
 import { render } from "@test";
 
 import { ReadyPage } from "./index";
 
 describe("ReadyPage", () => {
-    it("should render page successfuly", async () => {
-        render(<ReadyPage />);
+  pageReadyTests.bind(this)(ReadyPage);
 
-        expect(Row).toBeDefined();
-    });
+  it("should render 3 texts", async () => {
+    const { getByText } = render(<ReadyPage />);
 
-    it("should render 3 texts", async () => {
-        const { getByText } = render(<ReadyPage />);
+    getByText("Welcome on board");
+    getByText("Your configuration is completed.");
+  });
 
-        getByText("Welcome on board");
-        getByText("Your configuration is completed.");
-    });
+  it("should render 3 buttons", async () => {
+    const { getByText } = render(<ReadyPage />);
 
-    it("should render 3 buttons", async () => {
-        const { getByText } = render(<ReadyPage />);
+    expect(Button).toBeDefined();
 
-        expect(Button).toBeDefined();
-
-        expect(getByText("Documentation").closest("a")).toHaveAttribute(
-            "href",
-            "https://refine.dev",
-        );
-        expect(getByText("Examples").closest("a")).toHaveAttribute(
-            "href",
-            "https://refine.dev/docs/examples/tutorial",
-        );
-        expect(getByText("Community").closest("a")).toHaveAttribute(
-            "href",
-            "https://discord.gg/UuU3XCc3J5",
-        );
-    });
+    expect(getByText("Documentation").closest("a")).toHaveAttribute(
+      "href",
+      "https://refine.dev",
+    );
+    expect(getByText("Examples").closest("a")).toHaveAttribute(
+      "href",
+      "https://refine.dev/examples",
+    );
+    expect(getByText("Community").closest("a")).toHaveAttribute(
+      "href",
+      "https://discord.gg/refine",
+    );
+  });
 });

@@ -1,86 +1,66 @@
 import React from "react";
-import { Button, ButtonProps } from "antd";
+import { Button } from "antd";
 import { PlusSquareOutlined } from "@ant-design/icons";
+import { useCloneButton } from "@refinedev/core";
 import {
-    useCan,
-    useNavigation,
-    useResourceWithRoute,
-    useRouterContext,
-    useTranslate,
-    ResourceRouterParams,
-} from "@pankod/refine-core";
+  RefineButtonTestIds,
+  RefineButtonClassNames,
+} from "@refinedev/ui-types";
 
-export type CloneButtonProps = ButtonProps & {
-    resourceName?: string;
-    recordItemId?: string;
-    hideText?: boolean;
-    ignoreAccessControlProvider?: boolean;
-};
+import type { CloneButtonProps } from "../types";
 
 /**
  * `<CloneButton>` uses Ant Design's {@link https://ant.design/components/button/ `<Button> component`}.
- * It uses the {@link https://refine.dev/docs/core/hooks/navigation/useNavigation#clone `clone`} method from {@link https://refine.dev/docs/core/hooks/navigation/useNavigation useNavigation} under the hood.
+ * It uses the {@link https://refine.dev/docs/api-reference/core/hooks/navigation/useNavigation#clone `clone`} method from {@link https://refine.dev/docs/api-reference/core/hooks/navigation/useNavigation useNavigation} under the hood.
  * It can be useful when redirecting the app to the create page with the record id route of resource.
  *
- * @see {@link https://refine.dev/docs/ui-frameworks/antd/components/buttons/clone-button} for more details.
+ * @see {@link https://refine.dev/docs/api-reference/antd/components/buttons/clone-button} for more details.
  */
 export const CloneButton: React.FC<CloneButtonProps> = ({
-    resourceName: propResourceName,
-    recordItemId,
-    hideText = false,
-    ignoreAccessControlProvider = false,
-    children,
-    ...rest
+  resourceNameOrRouteName: propResourceNameOrRouteName,
+  resource: resourceNameFromProps,
+  recordItemId,
+  hideText = false,
+  accessControl,
+  meta,
+  children,
+  onClick,
+  ...rest
 }) => {
-    const resourceWithRoute = useResourceWithRoute();
+  const { to, LinkComponent, label, disabled, hidden, title } = useCloneButton({
+    id: recordItemId,
+    resource: resourceNameFromProps ?? propResourceNameOrRouteName,
+    accessControl,
+    meta,
+  });
 
-    const { clone } = useNavigation();
+  if (hidden) return null;
 
-    const translate = useTranslate();
-
-    const { useParams } = useRouterContext();
-
-    const { resource: routeResourceName, id: idFromRoute } =
-        useParams<ResourceRouterParams>();
-
-    const resource = resourceWithRoute(routeResourceName);
-
-    const resourceName = propResourceName ?? resource.name;
-
-    const id = decodeURIComponent(recordItemId ?? idFromRoute);
-
-    const onButtonClick = () => {
-        clone(resourceName, id!);
-    };
-
-    const { data } = useCan({
-        resource: resourceName,
-        action: "create",
-        params: { id },
-        queryOptions: {
-            enabled: !ignoreAccessControlProvider,
-        },
-    });
-
-    const createButtonDisabledTitle = () => {
-        if (data?.can) return "";
-        else if (data?.reason) return data.reason;
-        else
-            return translate(
-                "buttons.notAccessTitle",
-                "You don't have permission to access",
-            );
-    };
-
-    return (
-        <Button
-            onClick={onButtonClick}
-            icon={<PlusSquareOutlined />}
-            disabled={data?.can === false}
-            title={createButtonDisabledTitle()}
-            {...rest}
-        >
-            {!hideText && (children ?? translate("buttons.clone", "Clone"))}
-        </Button>
-    );
+  return (
+    <LinkComponent
+      to={to}
+      replace={false}
+      onClick={(e: React.PointerEvent<HTMLButtonElement>) => {
+        if (disabled) {
+          e.preventDefault();
+          return;
+        }
+        if (onClick) {
+          e.preventDefault();
+          onClick(e);
+        }
+      }}
+    >
+      <Button
+        icon={<PlusSquareOutlined />}
+        disabled={disabled}
+        title={title}
+        data-testid={RefineButtonTestIds.CloneButton}
+        className={RefineButtonClassNames.CloneButton}
+        {...rest}
+      >
+        {!hideText && (children ?? label)}
+      </Button>
+    </LinkComponent>
+  );
 };

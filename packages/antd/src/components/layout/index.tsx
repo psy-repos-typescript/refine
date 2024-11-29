@@ -1,40 +1,45 @@
 import React from "react";
-import { Layout as AntLayout, Grid } from "antd";
-import { LayoutProps, useRefineContext } from "@pankod/refine-core";
+import { Grid, Layout as AntdLayout } from "antd";
 
 import { Sider as DefaultSider } from "./sider";
 import { Header as DefaultHeader } from "./header";
+import type { RefineLayoutLayoutProps } from "./types";
 
-export const Layout: React.FC<LayoutProps> = ({
-    children,
-    Header,
-    Sider,
-    Footer,
-    OffLayoutArea,
+/**
+ * @deprecated use `<ThemedLayout>` instead with 100% backward compatibility.
+ * @see https://refine.dev/docs/api-reference/antd/components/antd-themed-layout
+ **/
+export const Layout: React.FC<RefineLayoutLayoutProps> = ({
+  children,
+  Header,
+  Sider,
+  Title,
+  Footer,
+  OffLayoutArea,
 }) => {
-    const breakpoint = Grid.useBreakpoint();
+  const breakpoint = Grid.useBreakpoint();
+  const SiderToRender = Sider ?? DefaultSider;
+  const HeaderToRender = Header ?? DefaultHeader;
+  const isSmall = typeof breakpoint.sm === "undefined" ? true : breakpoint.sm;
 
-    const SiderToRender = Sider ?? DefaultSider;
-    const HeaderToRender = Header ?? DefaultHeader;
-
-    return (
-        <AntLayout style={{ minHeight: "100vh", flexDirection: "row" }}>
-            <SiderToRender />
-            <AntLayout>
-                <HeaderToRender />
-                <AntLayout.Content>
-                    <div
-                        style={{
-                            padding: breakpoint.sm ? 24 : 12,
-                            minHeight: 360,
-                        }}
-                    >
-                        {children}
-                    </div>
-                    {OffLayoutArea && <OffLayoutArea />}
-                </AntLayout.Content>
-                {Footer && <Footer />}
-            </AntLayout>
-        </AntLayout>
-    );
+  return (
+    <AntdLayout style={{ minHeight: "100vh" }}>
+      <SiderToRender Title={Title} />
+      <AntdLayout>
+        <HeaderToRender />
+        <AntdLayout.Content>
+          <div
+            style={{
+              minHeight: 360,
+              padding: isSmall ? 24 : 12,
+            }}
+          >
+            {children}
+          </div>
+          {OffLayoutArea && <OffLayoutArea />}
+        </AntdLayout.Content>
+        {Footer && <Footer />}
+      </AntdLayout>
+    </AntdLayout>
+  );
 };

@@ -1,106 +1,240 @@
-import { QueryObserverResult, useQuery, UseQueryOptions } from "react-query";
+import { getXRay } from "@refinedev/devtools-internal";
+import {
+  type QueryObserverResult,
+  type UseQueryOptions,
+  useQuery,
+} from "@tanstack/react-query";
 
 import {
-    BaseRecord,
-    GetManyResponse,
-    HttpError,
-    MetaDataQuery,
-    LiveModeProps,
-    OpenNotificationParams,
-} from "../../interfaces";
+  handleMultiple,
+  pickDataProvider,
+  pickNotDeprecated,
+  prepareQueryContext,
+  useActiveAuthProvider,
+} from "@definitions/helpers";
 import {
-    useTranslate,
-    useCheckError,
-    useResourceSubscription,
-    useHandleNotification,
-    useDataProvider,
+  useDataProvider,
+  useHandleNotification,
+  useKeys,
+  useMeta,
+  useOnError,
+  useResource,
+  useResourceSubscription,
+  useTranslate,
 } from "@hooks";
 
-export type UseManyProps<TData, TError> = {
-    resource: string;
-    ids: string[];
-    queryOptions?: UseQueryOptions<GetManyResponse<TData>, TError>;
-    successNotification?: OpenNotificationParams | false;
-    errorNotification?: OpenNotificationParams | false;
-    metaData?: MetaDataQuery;
-    dataProviderName?: string;
-} & LiveModeProps;
+import type {
+  BaseKey,
+  BaseRecord,
+  GetManyResponse,
+  HttpError,
+  MetaQuery,
+} from "../../contexts/data/types";
+import type { LiveModeProps } from "../../contexts/live/types";
+import type { SuccessErrorNotification } from "../../contexts/notification/types";
+import {
+  type UseLoadingOvertimeOptionsProps,
+  type UseLoadingOvertimeReturnType,
+  useLoadingOvertime,
+} from "../useLoadingOvertime";
+
+export type UseManyProps<TQueryFnData, TError, TData> = {
+  /**
+   * Resource name for API data interactions
+   */
+  resource: string;
+  /**
+   * ids of the item in the resource
+   * @type [`BaseKey[]`](/docs/api-reference/core/interfaceReferences/#basekey)
+   */
+  ids: BaseKey[];
+  /**
+   * react-query's [useQuery](https://tanstack.com/query/v4/docs/reference/useQuery) options
+   */
+  queryOptions?: UseQueryOptions<
+    GetManyResponse<TQueryFnData>,
+    TError,
+    GetManyResponse<TData>
+  >;
+  /**
+   * Metadata query for `dataProvider`,
+   */
+  meta?: MetaQuery;
+  /**
+   * Metadata query for `dataProvider`,
+   * @deprecated `metaData` is deprecated with refine@4, refine will pass `meta` instead, however, we still support `metaData` for backward compatibility.
+   */
+  metaData?: MetaQuery;
+  /**
+   * If there is more than one `dataProvider`, you should use the `dataProviderName` that you will use.
+   * @default "default"
+   */
+  dataProviderName?: string;
+} & SuccessErrorNotification<GetManyResponse<TData>, TError, BaseKey[]> &
+  LiveModeProps &
+  UseLoadingOvertimeOptionsProps;
 
 /**
  * `useMany` is a modified version of `react-query`'s {@link https://react-query.tanstack.com/guides/queries `useQuery`} used for retrieving multiple items from a `resource`.
  *
  * It uses `getMany` method as query function from the `dataProvider` which is passed to `<Refine>`.
  *
- * @see {@link https://refine.dev/docs/core/hooks/data/useMany} for more details.
+ * @see {@link https://refine.dev/docs/api-reference/core/hooks/data/useMany} for more details.
  *
- * @typeParam TData - Result data of the query extends {@link https://refine.dev/docs/core/interfaceReferences#baserecord `BaseRecord`}
- * @typeParam TError - Custom error object that extends {@link https://refine.dev/docs/core/interfaceReferences#httperror `HttpError`}
+ * @typeParam TQueryFnData - Result data returned by the query function. Extends {@link https://refine.dev/docs/api-reference/core/interfaceReferences#baserecord `BaseRecord`}
+ * @typeParam TError - Custom error object that extends {@link https://refine.dev/docs/api-reference/core/interfaceReferences#httperror `HttpError`}
+ * @typeParam TData - Result data returned by the `select` function. Extends {@link https://refine.dev/docs/api-reference/core/interfaceReferences#baserecord `BaseRecord`}. Defaults to `TQueryFnData`
  *
  */
+
 export const useMany = <
-    TData extends BaseRecord = BaseRecord,
-    TError extends HttpError = HttpError,
+  TQueryFnData extends BaseRecord = BaseRecord,
+  TError extends HttpError = HttpError,
+  TData extends BaseRecord = TQueryFnData,
 >({
-    resource,
-    ids,
-    queryOptions,
-    successNotification,
-    errorNotification,
-    metaData,
+  resource: resourceFromProp,
+  ids,
+  queryOptions,
+  successNotification,
+  errorNotification,
+  meta,
+  metaData,
+  liveMode,
+  onLiveEvent,
+  liveParams,
+  dataProviderName,
+  overtimeOptions,
+}: UseManyProps<TQueryFnData, TError, TData>): QueryObserverResult<
+  GetManyResponse<TData>,
+  TError
+> &
+  UseLoadingOvertimeReturnType => {
+  const { resources, resource, identifier } = useResource(resourceFromProp);
+  const dataProvider = useDataProvider();
+  const translate = useTranslate();
+  const authProvider = useActiveAuthProvider();
+  const { mutate: checkError } = useOnError({
+    v3LegacyAuthProviderCompatible: Boolean(authProvider?.isLegacy),
+  });
+  const handleNotification = useHandleNotification();
+  const getMeta = useMeta();
+  const { keys, preferLegacyKeys } = useKeys();
+
+  const preferredMeta = pickNotDeprecated(meta, metaData);
+  const pickedDataProvider = pickDataProvider(
+    identifier,
+    dataProviderName,
+    resources,
+  );
+  const isEnabled =
+    queryOptions?.enabled === undefined || queryOptions?.enabled === true;
+
+  const { getMany, getOne } = dataProvider(pickedDataProvider);
+
+  const combinedMeta = getMeta({ resource, meta: preferredMeta });
+
+  useResourceSubscription({
+    resource: identifier,
+    types: ["*"],
+    params: {
+      ids: ids,
+      meta: combinedMeta,
+      metaData: combinedMeta,
+      subscriptionType: "useMany",
+      ...liveParams,
+    },
+    channel: `resources/${resource.name}`,
+    enabled: isEnabled,
     liveMode,
     onLiveEvent,
-    liveParams,
-    dataProviderName,
-}: UseManyProps<TData, TError>): QueryObserverResult<
+    dataProviderName: pickedDataProvider,
+    meta: {
+      ...meta,
+      dataProviderName,
+    },
+  });
+
+  const queryResponse = useQuery<
+    GetManyResponse<TQueryFnData>,
+    TError,
     GetManyResponse<TData>
-> => {
-    const dataProvider = useDataProvider();
+  >({
+    queryKey: keys()
+      .data(pickedDataProvider)
+      .resource(identifier)
+      .action("many")
+      .ids(...ids)
+      .params({
+        ...(preferredMeta || {}),
+      })
+      .get(preferLegacyKeys),
+    queryFn: (context) => {
+      const meta = {
+        ...combinedMeta,
+        queryContext: prepareQueryContext(context),
+      };
 
-    const { getMany } = dataProvider(dataProviderName);
+      if (getMany) {
+        return getMany({
+          resource: resource?.name,
+          ids,
+          meta,
+          metaData: meta,
+        });
+      }
+      return handleMultiple(
+        ids.map((id) =>
+          getOne<TQueryFnData>({
+            resource: resource?.name,
+            id,
+            meta,
+            metaData: meta,
+          }),
+        ),
+      );
+    },
+    ...queryOptions,
+    onSuccess: (data) => {
+      queryOptions?.onSuccess?.(data);
 
-    const translate = useTranslate();
-    const { mutate: checkError } = useCheckError();
-    const handleNotification = useHandleNotification();
+      const notificationConfig =
+        typeof successNotification === "function"
+          ? successNotification(data, ids, identifier)
+          : successNotification;
 
-    const isEnabled =
-        queryOptions?.enabled === undefined || queryOptions?.enabled === true;
+      handleNotification(notificationConfig);
+    },
+    onError: (err: TError) => {
+      checkError(err);
+      queryOptions?.onError?.(err);
 
-    useResourceSubscription({
-        resource,
-        types: ["*"],
-        params: { ids: ids ? ids?.map(String) : [], ...liveParams },
-        channel: `resources/${resource}`,
-        enabled: isEnabled,
-        liveMode,
-        onLiveEvent,
-    });
+      const notificationConfig =
+        typeof errorNotification === "function"
+          ? errorNotification(err, ids, identifier)
+          : errorNotification;
 
-    const queryResponse = useQuery<GetManyResponse<TData>, TError>(
-        [`resource/getMany/${resource}`, { ids, ...metaData }],
-        () => getMany<TData>({ resource, ids, metaData }),
-        {
-            ...queryOptions,
-            onSuccess: (data) => {
-                queryOptions?.onSuccess?.(data);
-                handleNotification(successNotification);
-            },
-            onError: (err: TError) => {
-                checkError(err);
-                queryOptions?.onError?.(err);
+      handleNotification(notificationConfig, {
+        key: `${ids[0]}-${identifier}-getMany-notification`,
+        message: translate(
+          "notifications.error",
+          { statusCode: err.statusCode },
+          `Error (status code: ${err.statusCode})`,
+        ),
+        description: err.message,
+        type: "error",
+      });
+    },
+    meta: {
+      ...queryOptions?.meta,
+      ...getXRay("useMany", preferLegacyKeys, resource?.name),
+    },
+  });
 
-                handleNotification(errorNotification, {
-                    key: `${ids[0]}-${resource}-getMany-notification`,
-                    message: translate(
-                        "notifications.error",
-                        { statusCode: err.statusCode },
-                        `Error (status code: ${err.statusCode})`,
-                    ),
-                    description: err.message,
-                    type: "error",
-                });
-            },
-        },
-    );
+  const { elapsedTime } = useLoadingOvertime({
+    isLoading: queryResponse.isFetching,
+    interval: overtimeOptions?.interval,
+    onInterval: overtimeOptions?.onInterval,
+  });
 
-    return queryResponse;
+  return { ...queryResponse, overtime: { elapsedTime } };
 };

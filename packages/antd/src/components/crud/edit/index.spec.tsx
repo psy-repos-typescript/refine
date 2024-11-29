@@ -1,255 +1,478 @@
-import React, { ReactNode } from "react";
-import { Route } from "react-router-dom";
-import { Button } from "antd";
+import React, { type ReactNode } from "react";
+import { Route, Routes } from "react-router-dom";
+import type { AccessControlProvider } from "@refinedev/core";
+import { Form, Input } from "antd";
 
-import { render, TestWrapper, waitFor } from "@test";
+import {
+  act,
+  fireEvent,
+  type ITestWrapperProps,
+  render,
+  TestWrapper,
+  waitFor,
+  MockJSONServer,
+} from "@test";
 import { Edit } from "./";
-import { IAccessControlContext } from "@pankod/refine-core/dist/interfaces";
+import { crudEditTests } from "@refinedev/ui-tests";
+import { RefineButtonTestIds } from "@refinedev/ui-types";
+import {
+  DeleteButton,
+  ListButton,
+  RefreshButton,
+  SaveButton,
+} from "@components/buttons";
+import { useForm } from "@hooks/form";
 
 const renderEdit = (
-    edit: ReactNode,
-    accessControlProvider?: IAccessControlContext,
+  edit: ReactNode,
+  accessControlProvider?: AccessControlProvider,
+  wrapperOptions?: ITestWrapperProps,
 ) => {
-    return render(<Route path="/:resource/edit/:id">{edit}</Route>, {
-        wrapper: TestWrapper({
-            routerInitialEntries: ["/posts/edit/1"],
-            accessControlProvider,
-        }),
-    });
+  return render(
+    <Routes>
+      <Route path="/:resource/edit/:id" element={edit} />
+    </Routes>,
+    {
+      wrapper: TestWrapper({
+        routerInitialEntries: ["/posts/edit/1"],
+        accessControlProvider,
+        ...wrapperOptions,
+      }),
+    },
+  );
 };
 
 describe("Edit", () => {
-    it("should render page successfuly", () => {
-        const { container, queryByTestId } = renderEdit(<Edit />);
+  crudEditTests.bind(this)(Edit);
 
-        expect(queryByTestId("edit-list-button")).not.toBeNull();
+  it("should render optional mutationMode with mutationModeProp prop", async () => {
+    const container = renderEdit(<Edit mutationMode="undoable" />);
 
-        expect(container).toBeTruthy();
+    expect(container).toBeTruthy();
+  });
+
+  describe("render delete button", () => {
+    it("should render delete button ", async () => {
+      const { getByText, queryByTestId } = render(
+        <Routes>
+          <Route
+            path="/:resource/edit/:id"
+            element={
+              <Edit
+                footerButtons={({ defaultButtons, deleteButtonProps }) => {
+                  expect(deleteButtonProps).toBeDefined();
+                  return <>{defaultButtons}</>;
+                }}
+              />
+            }
+          />
+        </Routes>,
+        {
+          wrapper: TestWrapper({
+            resources: [{ name: "posts", canDelete: true }],
+            routerInitialEntries: ["/posts/edit/1"],
+          }),
+        },
+      );
+
+      expect(queryByTestId(RefineButtonTestIds.DeleteButton)).not.toBeNull();
+
+      getByText("Edit Post");
     });
 
-    it("should render default save button successfuly", () => {
-        const { container, getByText } = renderEdit(<Edit />);
+    it("should not render delete button on resource canDelete false", async () => {
+      const { getByText, queryByTestId } = render(
+        <Routes>
+          <Route
+            path="/:resource/edit/:id"
+            element={
+              <Edit
+                footerButtons={({ defaultButtons, deleteButtonProps }) => {
+                  expect(deleteButtonProps).toBeUndefined();
+                  return <>{defaultButtons}</>;
+                }}
+              />
+            }
+          />
+        </Routes>,
+        {
+          wrapper: TestWrapper({
+            resources: [{ name: "posts", canDelete: false }],
+            routerInitialEntries: ["/posts/edit/1"],
+          }),
+        },
+      );
 
-        expect(container.querySelector("button")).toBeTruthy();
-        getByText("Save");
+      expect(queryByTestId(RefineButtonTestIds.DeleteButton)).toBeNull();
+
+      getByText("Edit Post");
     });
 
-    it("should render default save and delete buttons successfuly", () => {
-        const { container, getByText } = renderEdit(<Edit canDelete />);
+    it("should not render delete button on resource canDelete true & canDelete props false on component", async () => {
+      const { queryByTestId } = render(
+        <Routes>
+          <Route
+            path="/:resource/edit/:id"
+            element={
+              <Edit
+                canDelete={false}
+                footerButtons={({ defaultButtons, deleteButtonProps }) => {
+                  expect(deleteButtonProps).toBeUndefined();
+                  return <>{defaultButtons}</>;
+                }}
+              />
+            }
+          />
+        </Routes>,
 
-        expect(container.querySelector("button")).toBeTruthy();
-        getByText("Save");
-        getByText("Delete");
+        {
+          wrapper: TestWrapper({
+            resources: [{ name: "posts", canDelete: true }],
+            routerInitialEntries: ["/posts/edit/1"],
+          }),
+        },
+      );
+
+      expect(queryByTestId(RefineButtonTestIds.DeleteButton)).toBeNull();
     });
 
-    it("should render optional buttons with actionButtons prop", () => {
-        const { getByText, queryByTestId } = renderEdit(
-            <Edit
-                actionButtons={
-                    <>
-                        <Button>New Save Button</Button>
-                        <Button>New Delete Button</Button>
-                    </>
-                }
-            />,
-        );
+    it("should render delete button on resource canDelete false & canDelete props true on component", async () => {
+      const { queryByTestId } = render(
+        <Routes>
+          <Route
+            path="/:resource/edit/:id"
+            element={
+              <Edit
+                canDelete={true}
+                footerButtons={({ defaultButtons, deleteButtonProps }) => {
+                  expect(deleteButtonProps).toBeDefined();
+                  return <>{defaultButtons}</>;
+                }}
+              />
+            }
+          />
+        </Routes>,
+        {
+          wrapper: TestWrapper({
+            resources: [{ name: "posts", canDelete: false }],
+            routerInitialEntries: ["/posts/edit/1"],
+          }),
+        },
+      );
 
-        getByText("New Save Button");
-        getByText("New Delete Button");
-        expect(queryByTestId("edit-delete-button")).toBeNull();
+      expect(queryByTestId(RefineButtonTestIds.DeleteButton)).not.toBeNull();
     });
 
-    it("should render default title successfuly", () => {
-        const { getByText } = renderEdit(<Edit />);
+    it("should render delete button on resource canDelete false & deleteButtonProps props not null on component", async () => {
+      const { queryByTestId } = render(
+        <Routes>
+          <Route
+            path="/:resource/edit/:id"
+            element={
+              <Edit
+                deleteButtonProps={{ size: "large" }}
+                footerButtons={({ defaultButtons, deleteButtonProps }) => {
+                  expect(deleteButtonProps).toBeDefined();
+                  return <>{defaultButtons}</>;
+                }}
+              />
+            }
+          />
+        </Routes>,
+        {
+          wrapper: TestWrapper({
+            resources: [{ name: "posts", canDelete: false }],
+            routerInitialEntries: ["/posts/edit/1"],
+          }),
+        },
+      );
 
-        getByText("Edit Post");
+      expect(queryByTestId(RefineButtonTestIds.DeleteButton)).not.toBeNull();
+    });
+  });
+
+  describe("accessibility of buttons by accessControlProvider", () => {
+    it("should render disabled list button and not disabled delete button", async () => {
+      const { queryByTestId } = renderEdit(
+        <Edit
+          canDelete
+          footerButtons={({ defaultButtons, deleteButtonProps }) => {
+            expect(deleteButtonProps).toBeDefined();
+            return <>{defaultButtons}</>;
+          }}
+        />,
+        {
+          can: ({ action }) => {
+            switch (action) {
+              case "list":
+                return Promise.resolve({ can: true });
+              default:
+                return Promise.resolve({ can: false });
+            }
+          },
+        },
+      );
+
+      await waitFor(() =>
+        expect(
+          queryByTestId(RefineButtonTestIds.ListButton),
+        ).not.toBeDisabled(),
+      );
+      await waitFor(() =>
+        expect(queryByTestId(RefineButtonTestIds.DeleteButton)).toBeDisabled(),
+      );
     });
 
-    it("should render with label instead of resource name successfully", () => {
-        const { getByText } = render(
-            <Route path="/:resource/edit/:id">
-                <Edit />
-            </Route>,
-            {
-                wrapper: TestWrapper({
-                    resources: [
-                        {
-                            name: "posts",
-                            options: { route: "posts", label: "test" },
-                        },
-                    ],
-                    routerInitialEntries: ["/posts/edit/1"],
-                }),
+    it("should render disabled list button and delete button", async () => {
+      const { queryByTestId } = renderEdit(
+        <Edit
+          canDelete
+          headerButtons={({ defaultButtons, listButtonProps }) => {
+            expect(listButtonProps).toBeDefined();
+            return <>{defaultButtons}</>;
+          }}
+          footerButtons={({ defaultButtons, deleteButtonProps }) => {
+            expect(deleteButtonProps).toBeDefined();
+            return <>{defaultButtons}</>;
+          }}
+        />,
+        {
+          can: ({ action }) => {
+            switch (action) {
+              case "list":
+              case "delete":
+                return Promise.resolve({ can: false });
+              default:
+                return Promise.resolve({ can: false });
+            }
+          },
+        },
+      );
+
+      await waitFor(() =>
+        expect(queryByTestId(RefineButtonTestIds.ListButton)).toBeDisabled(),
+      );
+      await waitFor(() =>
+        expect(queryByTestId(RefineButtonTestIds.DeleteButton)).toBeDisabled(),
+      );
+    });
+
+    it("should customize default buttons with default props", async () => {
+      const { queryByTestId } = renderEdit(
+        <Edit
+          canDelete
+          saveButtonProps={{ className: "customize-test" }}
+          headerButtons={({ listButtonProps, refreshButtonProps }) => {
+            return (
+              <>
+                <RefreshButton {...refreshButtonProps} />
+                <ListButton {...listButtonProps} />
+              </>
+            );
+          }}
+          footerButtons={({ deleteButtonProps, saveButtonProps }) => {
+            return (
+              <>
+                <DeleteButton {...deleteButtonProps} />
+                <SaveButton {...saveButtonProps} />
+              </>
+            );
+          }}
+        />,
+        {
+          can: ({ action }) => {
+            switch (action) {
+              case "list":
+              case "delete":
+                return Promise.resolve({ can: false });
+              default:
+                return Promise.resolve({ can: false });
+            }
+          },
+        },
+      );
+
+      await waitFor(() =>
+        expect(queryByTestId(RefineButtonTestIds.DeleteButton)).toBeDisabled(),
+      );
+      await waitFor(() =>
+        expect(queryByTestId(RefineButtonTestIds.ListButton)).toBeDisabled(),
+      );
+      expect(queryByTestId(RefineButtonTestIds.SaveButton)).toHaveClass(
+        "customize-test",
+      );
+      expect(queryByTestId(RefineButtonTestIds.RefreshButton)).toBeTruthy();
+    });
+  });
+
+  describe("list button", () => {
+    it("should render list button", async () => {
+      const { queryByTestId } = renderEdit(<Edit />);
+      await waitFor(() =>
+        expect(queryByTestId(RefineButtonTestIds.ListButton)).not.toBeNull(),
+      );
+    });
+
+    it("should not render list button when list resource is undefined", async () => {
+      const { queryByTestId } = renderEdit(
+        <Edit
+          headerButtons={({ defaultButtons, listButtonProps }) => {
+            expect(listButtonProps).toBeUndefined();
+            return <>{defaultButtons}</>;
+          }}
+        />,
+        undefined,
+        {
+          resources: [{ name: "posts", list: undefined }],
+        },
+      );
+      await waitFor(() =>
+        expect(queryByTestId(RefineButtonTestIds.ListButton)).toBeNull(),
+      );
+    });
+
+    it("should not render list button when has recordItemId", async () => {
+      const { queryByTestId } = renderEdit(
+        <Edit
+          recordItemId="1"
+          headerButtons={({ defaultButtons, listButtonProps }) => {
+            expect(listButtonProps).toBeUndefined();
+            return <>{defaultButtons}</>;
+          }}
+        />,
+      );
+      await waitFor(() =>
+        expect(queryByTestId(RefineButtonTestIds.ListButton)).toBeNull(),
+      );
+    });
+  });
+
+  describe("auto save", () => {
+    const EditPageWithAutoSave = () => {
+      const { formProps, formLoading, autoSaveProps } = useForm({
+        action: "edit",
+        autoSave: {
+          enabled: true,
+        },
+      });
+
+      return (
+        <Edit autoSaveProps={autoSaveProps}>
+          {formLoading && <div>loading...</div>}
+          <Form {...formProps} layout="vertical">
+            <Form.Item label="Title" name="title">
+              <Input data-testid="title" />
+            </Form.Item>
+          </Form>
+        </Edit>
+      );
+    };
+
+    it("check idle,loading,success statuses", async () => {
+      jest.useFakeTimers();
+
+      const { getByText, getByTestId } = render(
+        <Routes>
+          <Route
+            path="/:resource/edit/:id"
+            element={<EditPageWithAutoSave />}
+          />
+        </Routes>,
+        {
+          wrapper: TestWrapper({
+            resources: [{ name: "posts", canDelete: false }],
+            routerInitialEntries: ["/posts/edit/1"],
+            dataProvider: {
+              ...MockJSONServer,
+              update: () => {
+                return new Promise((res) => {
+                  setTimeout(
+                    () =>
+                      res({
+                        data: {
+                          id: "1",
+                          title: "ok",
+                        } as any,
+                      }),
+                    1000,
+                  );
+                });
+              },
             },
-        );
+          }),
+        },
+      );
 
-        getByText("Edit Test");
+      getByText("Edit Post");
+      getByText("waiting for changes");
+
+      // update title and wait
+      await act(async () => {
+        fireEvent.change(getByTestId("title"), {
+          target: { value: "test" },
+        });
+
+        jest.advanceTimersByTime(1100);
+      });
+
+      // check saving message
+      expect(getByText("saving...")).toBeTruthy();
+
+      await act(async () => {
+        jest.advanceTimersByTime(1000);
+      });
+
+      // check saved message
+      expect(getByText("saved")).toBeTruthy();
     });
 
-    it("should render optional title with title prop", () => {
-        const { getByText } = renderEdit(<Edit title="New Title" />);
+    it("check error status", async () => {
+      jest.useFakeTimers();
 
-        getByText("New Title");
-    });
-
-    it("should render optional mutationMode with mutationModeProp prop", () => {
-        const container = renderEdit(<Edit mutationMode="undoable" />);
-
-        expect(container).toBeTruthy();
-    });
-
-    it("should render optional resource with resource prop", () => {
-        const { getByText } = render(
-            <Route>
-                <Edit resource="posts" />
-            </Route>,
-            {
-                wrapper: TestWrapper({
-                    routerInitialEntries: ["/custom"],
-                }),
+      const { getByText, getByTestId } = render(
+        <Routes>
+          <Route
+            path="/:resource/edit/:id"
+            element={<EditPageWithAutoSave />}
+          />
+        </Routes>,
+        {
+          wrapper: TestWrapper({
+            resources: [{ name: "posts", canDelete: false }],
+            routerInitialEntries: ["/posts/edit/1"],
+            dataProvider: {
+              ...MockJSONServer,
+              update: () => {
+                return new Promise((res, rej) => {
+                  setTimeout(() => rej("error"), 1000);
+                });
+              },
             },
-        );
+          }),
+        },
+      );
 
-        getByText("Edit Post");
+      getByText("Edit Post");
+      getByText("waiting for changes");
+
+      // update title and wait
+      await act(async () => {
+        fireEvent.change(getByTestId("title"), {
+          target: { value: "test" },
+        });
+
+        jest.advanceTimersByTime(1100);
+      });
+
+      // check saving message
+      expect(getByText("saving...")).toBeTruthy();
+
+      await act(async () => {
+        jest.advanceTimersByTime(1000);
+      });
+
+      // check saved message
+      expect(getByText("auto save failure")).toBeTruthy();
     });
-
-    it("should render optional recordItemId with resource prop", () => {
-        const { getByText, queryByTestId } = renderEdit(
-            <Edit recordItemId="1" />,
-        );
-
-        getByText("Edit Post");
-
-        expect(queryByTestId("edit-list-button")).toBeNull();
-    });
-
-    describe("render delete button", () => {
-        it("should render delete button ", () => {
-            const { getByText, queryByTestId } = render(
-                <Route path="/:resource/edit/:id">
-                    <Edit />
-                </Route>,
-                {
-                    wrapper: TestWrapper({
-                        resources: [{ name: "posts", canDelete: true }],
-                        routerInitialEntries: ["/posts/edit/1"],
-                    }),
-                },
-            );
-
-            expect(queryByTestId("edit-delete-button")).not.toBeNull();
-
-            getByText("Edit Post");
-        });
-
-        it("should not render delete button on resource canDelete false", () => {
-            const { getByText, queryByTestId } = render(
-                <Route path="/:resource/edit/:id">
-                    <Edit />
-                </Route>,
-                {
-                    wrapper: TestWrapper({
-                        resources: [{ name: "posts", canDelete: false }],
-                        routerInitialEntries: ["/posts/edit/1"],
-                    }),
-                },
-            );
-
-            expect(queryByTestId("edit-delete-button")).toBeNull();
-
-            getByText("Edit Post");
-        });
-
-        it("should not render delete button on resource canDelete true & canDelete props false on component", () => {
-            const { queryByTestId } = render(
-                <Route path="/:resource/edit/:id">
-                    <Edit canDelete={false} />
-                </Route>,
-                {
-                    wrapper: TestWrapper({
-                        resources: [{ name: "posts", canDelete: true }],
-                        routerInitialEntries: ["/posts/edit/1"],
-                    }),
-                },
-            );
-
-            expect(queryByTestId("edit-delete-button")).toBeNull();
-        });
-
-        it("should render delete button on resource canDelete false & canDelete props true on component", () => {
-            const { queryByTestId } = render(
-                <Route path="/:resource/edit/:id">
-                    <Edit canDelete={true} />
-                </Route>,
-                {
-                    wrapper: TestWrapper({
-                        resources: [{ name: "posts", canDelete: false }],
-                        routerInitialEntries: ["/posts/edit/1"],
-                    }),
-                },
-            );
-
-            expect(queryByTestId("edit-delete-button")).not.toBeNull();
-        });
-
-        it("should render delete button on resource canDelete false & deleteButtonProps props not null on component", () => {
-            const { queryByTestId } = render(
-                <Route path="/:resource/edit/:id">
-                    <Edit deleteButtonProps={{ size: "large" }} />
-                </Route>,
-                {
-                    wrapper: TestWrapper({
-                        resources: [{ name: "posts", canDelete: false }],
-                        routerInitialEntries: ["/posts/edit/1"],
-                    }),
-                },
-            );
-
-            expect(queryByTestId("edit-delete-button")).not.toBeNull();
-        });
-    });
-
-    describe("accessibility of buttons by accessControlProvider", () => {
-        it("should render disabled list button and not disabled delete button", async () => {
-            const { queryByTestId } = renderEdit(<Edit canDelete />, {
-                can: ({ action }) => {
-                    switch (action) {
-                        case "list":
-                            return Promise.resolve({ can: true });
-                        case "delete":
-                        default:
-                            return Promise.resolve({ can: false });
-                    }
-                },
-            });
-
-            await waitFor(() =>
-                expect(queryByTestId("edit-list-button")).not.toBeDisabled(),
-            );
-            await waitFor(() =>
-                expect(queryByTestId("edit-delete-button")).toBeDisabled(),
-            );
-        });
-
-        it("should render disabled list button and delete button", async () => {
-            const { queryByTestId } = renderEdit(<Edit canDelete />, {
-                can: ({ action }) => {
-                    switch (action) {
-                        case "list":
-                        case "delete":
-                            return Promise.resolve({ can: false });
-                        default:
-                            return Promise.resolve({ can: false });
-                    }
-                },
-            });
-
-            await waitFor(() =>
-                expect(queryByTestId("edit-list-button")).toBeDisabled(),
-            );
-            await waitFor(() =>
-                expect(queryByTestId("edit-delete-button")).toBeDisabled(),
-            );
-        });
-    });
+  });
 });

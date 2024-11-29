@@ -1,84 +1,64 @@
 import React from "react";
-import { Button, ButtonProps } from "antd";
+import { Button } from "antd";
 import { BarsOutlined } from "@ant-design/icons";
+import { useListButton } from "@refinedev/core";
 import {
-    useCan,
-    useNavigation,
-    useResourceWithRoute,
-    useRouterContext,
-    useTranslate,
-    ResourceRouterParams,
-    userFriendlyResourceName,
-} from "@pankod/refine-core";
+  RefineButtonClassNames,
+  RefineButtonTestIds,
+} from "@refinedev/ui-types";
 
-export type ListButtonProps = ButtonProps & {
-    resourceName?: string;
-    hideText?: boolean;
-    ignoreAccessControlProvider?: boolean;
-};
+import type { ListButtonProps } from "../types";
 
 /**
  * `<ListButton>` is using Ant Design's {@link https://ant.design/components/button/ `<Button>`} component.
- * It uses the  {@link https://refine.dev/docs/core/hooks/navigation/useNavigation#list `list`} method from {@link https://refine.dev/docs/core/hooks/navigation/useNavigation `useNavigation`} under the hood.
+ * It uses the  {@link https://refine.dev/docs/api-reference/core/hooks/navigation/useNavigation#list `list`} method from {@link https://refine.dev/docs/api-reference/core/hooks/navigation/useNavigation `useNavigation`} under the hood.
  * It can be useful when redirecting the app to the list page route of resource}.
  *
- * @see {@link https://refine.dev/docs/ui-frameworks/antd/components/buttons/list-button} for more details.
+ * @see {@link https://refine.dev/docs/api-reference/antd/components/buttons/list-button} for more details.
  */
 export const ListButton: React.FC<ListButtonProps> = ({
-    resourceName: propResourceName,
-    hideText = false,
-    ignoreAccessControlProvider = false,
-    children,
-    ...rest
+  resource: resourceNameFromProps,
+  resourceNameOrRouteName: propResourceNameOrRouteName,
+  hideText = false,
+  accessControl,
+  meta,
+  children,
+  onClick,
+  ...rest
 }) => {
-    const resourceWithRoute = useResourceWithRoute();
+  const { to, label, title, hidden, disabled, LinkComponent } = useListButton({
+    resource: resourceNameFromProps ?? propResourceNameOrRouteName,
+    accessControl,
+    meta,
+  });
 
-    const { list } = useNavigation();
-    const translate = useTranslate();
+  if (hidden) return null;
 
-    const { useParams } = useRouterContext();
-
-    const { resource: routeResourceName } = useParams<ResourceRouterParams>();
-
-    const resource = resourceWithRoute(routeResourceName);
-
-    const resourceName = propResourceName ?? resource.name;
-
-    const { data } = useCan({
-        resource: resourceName,
-        action: "list",
-        queryOptions: {
-            enabled: !ignoreAccessControlProvider,
-        },
-    });
-
-    const createButtonDisabledTitle = () => {
-        if (data?.can) return "";
-        else if (data?.reason) return data.reason;
-        else
-            return translate(
-                "buttons.notAccessTitle",
-                "You don't have permission to access",
-            );
-    };
-
-    return (
-        <Button
-            onClick={(): void => list(resourceName, "push")}
-            icon={<BarsOutlined />}
-            disabled={data?.can === false}
-            title={createButtonDisabledTitle()}
-            {...rest}
-        >
-            {!hideText &&
-                (children ??
-                    translate(
-                        `${resourceName}.titles.list`,
-                        userFriendlyResourceName(
-                            resource.label ?? resourceName,
-                            "plural",
-                        ),
-                    ))}
-        </Button>
-    );
+  return (
+    <LinkComponent
+      to={to}
+      replace={false}
+      onClick={(e: React.PointerEvent<HTMLButtonElement>) => {
+        if (disabled) {
+          e.preventDefault();
+          return;
+        }
+        if (onClick) {
+          e.preventDefault();
+          onClick(e);
+        }
+      }}
+    >
+      <Button
+        icon={<BarsOutlined />}
+        disabled={disabled}
+        title={title}
+        data-testid={RefineButtonTestIds.ListButton}
+        className={RefineButtonClassNames.ListButton}
+        {...rest}
+      >
+        {!hideText && (children ?? label)}
+      </Button>
+    </LinkComponent>
+  );
 };

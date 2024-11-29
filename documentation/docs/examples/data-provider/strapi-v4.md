@@ -1,16 +1,16 @@
 ---
 id: strapi-v4
 title: Strapi v4
+example-tags: [data-provider, auth-provider]
 ---
 
-[View Source](https://github.com/pankod/refine/tree/master/examples/dataProvider/strapi-v4)
+Refine supports all the features that come with [Strapi-v4](https://docs.strapi.io/developer-docs/latest/getting-started/introduction.html). In this example, how to manage your data with Refine Strapi-v4 Data Provider, CRUD operations and more is explained in detail.
+
+:::note Demo Credentials
 
 **Username**: demo@refine.dev  
 **Password**: demodemo
 
-<iframe src="https://codesandbox.io/embed/refine-strapi-v4-example-dt5gz?autoresize=1&fontsize=14&theme=dark&view=preview"
-    style={{width: "100%", height:"80vh", border: "0px", borderRadius: "8px", overflow:"hidden"}}
-    title="refine-strapi-example"
-    allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking"
-    sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
-></iframe>
+:::
+
+<CodeSandboxExample path="data-provider-strapi-v4" />

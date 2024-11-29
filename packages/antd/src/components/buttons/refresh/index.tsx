@@ -1,70 +1,46 @@
 import React from "react";
-import { Button, ButtonProps } from "antd";
+import { Button } from "antd";
 import { RedoOutlined } from "@ant-design/icons";
+import { useRefreshButton } from "@refinedev/core";
 import {
-    useOne,
-    useResourceWithRoute,
-    useRouterContext,
-    useTranslate,
-    MetaDataQuery,
-    ResourceRouterParams,
-} from "@pankod/refine-core";
+  RefineButtonClassNames,
+  RefineButtonTestIds,
+} from "@refinedev/ui-types";
 
-export type RefreshButtonProps = ButtonProps & {
-    resourceName?: string;
-    recordItemId?: string;
-    hideText?: boolean;
-    metaData?: MetaDataQuery;
-    dataProviderName?: string;
-};
+import type { RefreshButtonProps } from "../types";
 
 /**
  * `<RefreshButton>` uses Ant Design's {@link https://ant.design/components/button/ `<Button>`} component
- * to update the data shown on the page via the {@link https://refine.dev/docs/core/hooks/data/useOne `useOne`} method provided by your dataProvider.
+ * to update the data shown on the page via the {@link https://refine.dev/docs/api-reference/core/hooks/invalidate/useInvalidate `useInvalidate`} hook.
  *
- * @see {@link https://refine.dev/docs/ui-frameworks/antd/components/buttons/refresh-button} for more details.
+ * @see {@link https://refine.dev/docs/api-reference/antd/components/buttons/refresh-button} for more details.
  */
 export const RefreshButton: React.FC<RefreshButtonProps> = ({
-    resourceName: propResourceName,
-    recordItemId,
-    hideText = false,
-    metaData,
-    dataProviderName,
-    children,
-    ...rest
+  resource: resourceNameFromProps,
+  resourceNameOrRouteName: propResourceNameOrRouteName,
+  recordItemId,
+  hideText = false,
+  dataProviderName,
+  children,
+  meta: _meta,
+  metaData: _metaData,
+  ...rest
 }) => {
-    const translate = useTranslate();
-    const resourceWithRoute = useResourceWithRoute();
+  const { onClick, label, loading } = useRefreshButton({
+    resource: resourceNameFromProps ?? propResourceNameOrRouteName,
+    id: recordItemId,
+    dataProviderName,
+  });
 
-    const { useParams } = useRouterContext();
-
-    const { resource: routeResourceName, id: idFromRoute } =
-        useParams<ResourceRouterParams>();
-
-    const resourceName = propResourceName ?? routeResourceName;
-
-    const resource = resourceWithRoute(resourceName);
-
-    const id = decodeURIComponent(recordItemId ?? idFromRoute);
-
-    const { refetch, isFetching } = useOne({
-        resource: resource.name,
-        id,
-        queryOptions: {
-            enabled: false,
-        },
-        metaData,
-        liveMode: "off",
-        dataProviderName,
-    });
-
-    return (
-        <Button
-            icon={<RedoOutlined spin={isFetching} />}
-            onClick={() => refetch()}
-            {...rest}
-        >
-            {!hideText && (children ?? translate("buttons.refresh", "Refresh"))}
-        </Button>
-    );
+  return (
+    <Button
+      onClick={onClick}
+      icon={<RedoOutlined spin={loading} />}
+      data-testid={RefineButtonTestIds.RefreshButton}
+      className={RefineButtonClassNames.RefreshButton}
+      {...rest}
+    >
+      {!hideText && (children ?? label)}
+    </Button>
+  );
 };

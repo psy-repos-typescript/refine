@@ -1,31 +1,30 @@
 import React from "react";
-import { Card, PageHeader, PageHeaderProps, Space, Spin } from "antd";
+import { Card, Space, Spin } from "antd";
 import {
-    useNavigation,
-    useResourceWithRoute,
-    useRouterContext,
-    useTranslate,
-    ResourceRouterParams,
-    userFriendlyResourceName,
-} from "@pankod/refine-core";
+  useNavigation,
+  useTranslate,
+  useUserFriendlyName,
+  useRefineContext,
+  useResource,
+  useToPath,
+  useRouterType,
+  useBack,
+  useGo,
+} from "@refinedev/core";
 
 import {
-    EditButton,
-    DeleteButton,
-    RefreshButton,
-    ListButton,
+  EditButton,
+  DeleteButton,
+  RefreshButton,
+  ListButton,
+  Breadcrumb,
+  PageHeader,
+  type ListButtonProps,
+  type EditButtonProps,
+  type DeleteButtonProps,
+  type RefreshButtonProps,
 } from "@components";
-
-export interface ShowProps {
-    title?: string;
-    canEdit?: boolean;
-    canDelete?: boolean;
-    actionButtons?: React.ReactNode;
-    isLoading?: boolean;
-    pageHeaderProps?: PageHeaderProps;
-    resource?: string;
-    recordItemId?: string;
-}
+import type { ShowProps } from "../types";
 
 /**
  * `<Show>` provides us a layout for displaying the page.
@@ -34,93 +33,173 @@ export interface ShowProps {
  * @see {@link https://refine.dev/docs/ui-frameworks/antd/components/basic-views/show} for more details.
  */
 export const Show: React.FC<ShowProps> = ({
-    title,
-    canEdit,
-    canDelete,
-    actionButtons,
-    isLoading = false,
-    children,
-    pageHeaderProps,
-    resource: resourceFromProps,
-    recordItemId,
+  title,
+  canEdit,
+  canDelete,
+  isLoading = false,
+  children,
+  resource: resourceFromProps,
+  recordItemId,
+  dataProviderName,
+  breadcrumb: breadcrumbFromProps,
+  contentProps,
+  headerProps,
+  wrapperProps,
+  headerButtons,
+  footerButtons,
+  footerButtonProps,
+  headerButtonProps,
+  goBack: goBackFromProps,
 }) => {
-    const translate = useTranslate();
+  const translate = useTranslate();
+  const {
+    options: { breadcrumb: globalBreadcrumb } = {},
+  } = useRefineContext();
 
-    const { goBack, list } = useNavigation();
+  const routerType = useRouterType();
+  const back = useBack();
+  const go = useGo();
+  const { goBack, list: legacyGoList } = useNavigation();
+  const getUserFriendlyName = useUserFriendlyName();
 
-    const resourceWithRoute = useResourceWithRoute();
+  const {
+    resource,
+    action,
+    id: idFromParams,
+    identifier,
+  } = useResource(resourceFromProps);
 
-    const { useParams } = useRouterContext();
+  const goListPath = useToPath({
+    resource,
+    action: "list",
+  });
 
-    const {
-        resource: routeResourceName,
-        action: routeFromAction,
-        id: idFromRoute,
-    } = useParams<ResourceRouterParams>();
+  const id = recordItemId ?? idFromParams;
 
-    const resource = resourceWithRoute(resourceFromProps ?? routeResourceName);
+  const breadcrumb =
+    typeof breadcrumbFromProps === "undefined"
+      ? globalBreadcrumb
+      : breadcrumbFromProps;
 
-    const isDeleteButtonVisible = canDelete ?? resource.canDelete;
-    const isEditButtonVisible = canEdit ?? resource.canEdit;
+  const hasList = resource?.list && !recordItemId;
+  const isDeleteButtonVisible =
+    canDelete ?? resource?.meta?.canDelete ?? resource?.canDelete;
+  const isEditButtonVisible = canEdit ?? resource?.canEdit ?? !!resource?.edit;
 
-    const id = recordItemId ?? encodeURIComponent(idFromRoute);
+  const listButtonProps: ListButtonProps | undefined = hasList
+    ? {
+        resource: routerType === "legacy" ? resource?.route : identifier,
+      }
+    : undefined;
+  const editButtonProps: EditButtonProps | undefined = isEditButtonVisible
+    ? {
+        ...(isLoading ? { disabled: true } : {}),
+        type: "primary",
+        resource: routerType === "legacy" ? resource?.route : identifier,
+        recordItemId: id,
+      }
+    : undefined;
+  const deleteButtonProps: DeleteButtonProps | undefined = isDeleteButtonVisible
+    ? {
+        ...(isLoading ? { disabled: true } : {}),
+        resource: routerType === "legacy" ? resource?.route : identifier,
+        recordItemId: id,
+        onSuccess: () => {
+          if (routerType === "legacy") {
+            legacyGoList(resource?.route ?? resource?.name ?? "");
+          } else {
+            go({ to: goListPath });
+          }
+        },
+        dataProviderName,
+      }
+    : undefined;
+  const refreshButtonProps: RefreshButtonProps = {
+    ...(isLoading ? { disabled: true } : {}),
+    resource: routerType === "legacy" ? resource?.route : identifier,
+    recordItemId: id,
+    dataProviderName,
+  };
 
-    return (
-        <PageHeader
-            ghost={false}
-            onBack={routeFromAction ? goBack : undefined}
-            title={
-                title ??
-                translate(
-                    `${resource.name}.titles.show`,
-                    `Show ${userFriendlyResourceName(
-                        resource.label ?? resource.name,
-                        "singular",
-                    )}`,
-                )
+  const defaultHeaderButtons = (
+    <>
+      {hasList && <ListButton {...listButtonProps} />}
+      {isEditButtonVisible && <EditButton {...editButtonProps} />}
+      {isDeleteButtonVisible && <DeleteButton {...deleteButtonProps} />}
+      <RefreshButton {...refreshButtonProps} />
+    </>
+  );
+
+  return (
+    <div {...(wrapperProps ?? {})}>
+      <PageHeader
+        backIcon={goBackFromProps}
+        onBack={
+          action !== "list" && typeof action !== "undefined"
+            ? routerType === "legacy"
+              ? goBack
+              : back
+            : undefined
+        }
+        title={
+          title ??
+          translate(
+            `${identifier}.titles.show`,
+            `Show ${getUserFriendlyName(
+              resource?.meta?.label ??
+                resource?.options?.label ??
+                resource?.label ??
+                identifier,
+              "singular",
+            )}`,
+          )
+        }
+        extra={
+          <Space key="extra-buttons" wrap {...(headerButtonProps ?? {})}>
+            {headerButtons
+              ? typeof headerButtons === "function"
+                ? headerButtons({
+                    defaultButtons: defaultHeaderButtons,
+                    deleteButtonProps,
+                    editButtonProps,
+                    listButtonProps,
+                    refreshButtonProps,
+                  })
+                : headerButtons
+              : defaultHeaderButtons}
+          </Space>
+        }
+        breadcrumb={
+          typeof breadcrumb !== "undefined" ? (
+            <>{breadcrumb}</> ?? undefined
+          ) : (
+            <Breadcrumb />
+          )
+        }
+        {...(headerProps ?? {})}
+      >
+        <Spin spinning={isLoading}>
+          <Card
+            bordered={false}
+            actions={
+              footerButtons
+                ? [
+                    <Space key="footer-buttons" wrap {...footerButtonProps}>
+                      {typeof footerButtons === "function"
+                        ? footerButtons({
+                            defaultButtons: null,
+                          })
+                        : footerButtons}
+                    </Space>,
+                  ]
+                : undefined
             }
-            extra={
-                <Space key="extra-buttons" wrap>
-                    {!recordItemId && (
-                        <ListButton
-                            data-testid="show-list-button"
-                            resourceName={resource.name}
-                        />
-                    )}
-                    {isEditButtonVisible && (
-                        <EditButton
-                            disabled={isLoading}
-                            data-testid="show-edit-button"
-                            resourceName={resource.name}
-                            recordItemId={id}
-                        />
-                    )}
-                    {isDeleteButtonVisible && (
-                        <DeleteButton
-                            resourceName={resource.name}
-                            data-testid="show-delete-button"
-                            recordItemId={id}
-                            onSuccess={() =>
-                                list(resource.route ?? resource.name)
-                            }
-                        />
-                    )}
-                    <RefreshButton
-                        resourceName={resource.name}
-                        recordItemId={id}
-                    />
-                </Space>
-            }
-            {...pageHeaderProps}
-        >
-            <Spin spinning={isLoading}>
-                <Card
-                    bordered={false}
-                    actions={actionButtons ? [actionButtons] : undefined}
-                >
-                    {children}
-                </Card>
-            </Spin>
-        </PageHeader>
-    );
+            {...(contentProps ?? {})}
+          >
+            {children}
+          </Card>
+        </Spin>
+      </PageHeader>
+    </div>
+  );
 };

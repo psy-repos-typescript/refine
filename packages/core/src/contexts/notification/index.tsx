@@ -1,28 +1,18 @@
-import React, { createContext } from "react";
+import React, { createContext, type PropsWithChildren } from "react";
 
-import { INotificationContext } from "./INotificationContext";
+import type { INotificationContext } from "./types";
 
-export const defaultNotificationProvider: INotificationContext = {
-    open: () => {
-        return {};
-    },
-    close: () => {
-        return {};
-    },
-};
+/** @deprecated default value for notification context has no use and is an empty object.  */
+export const defaultNotificationProvider: INotificationContext = {};
 
-export const NotificationContext = createContext<INotificationContext>(
-    defaultNotificationProvider,
-);
+export const NotificationContext = createContext<INotificationContext>({});
 
-export const NotificationContextProvider: React.FC<INotificationContext> = ({
-    open,
-    close,
-    children,
-}) => {
-    return (
-        <NotificationContext.Provider value={{ open, close }}>
-            {children}
-        </NotificationContext.Provider>
-    );
+export const NotificationContextProvider: React.FC<
+  PropsWithChildren<INotificationContext>
+> = ({ open, close, children }) => {
+  return (
+    <NotificationContext.Provider value={{ open, close }}>
+      {children}
+    </NotificationContext.Provider>
+  );
 };

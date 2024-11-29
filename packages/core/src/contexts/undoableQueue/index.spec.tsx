@@ -1,94 +1,88 @@
 import * as React from "react";
-import { act } from "@test";
-import { renderHook } from "@testing-library/react-hooks";
 
-import { undoableQueueReducer } from "./undoableQueueContext";
+import { renderHook } from "@testing-library/react";
+
+import { act } from "@test";
+
+import { undoableQueueReducer } from ".";
 
 describe("Notification Reducer", () => {
-    const notificationDispatch = jest.fn();
+  const notificationDispatch = jest.fn();
 
-    const providerProps = {
-        notifications: [
-            {
-                id: "1",
-                resource: "posts",
-                seconds: 5000,
-                isRunning: true,
-            },
-        ],
-        notificationDispatch: notificationDispatch,
-    };
+  const providerProps = {
+    notifications: [
+      {
+        id: "1",
+        resource: "posts",
+        seconds: 5000,
+        isRunning: true,
+      },
+    ],
+    notificationDispatch: notificationDispatch,
+  };
 
-    it("should render notification item with ADD action", () => {
-        act(async () => {
-            const { result, waitForNextUpdate } = renderHook(() =>
-                React.useReducer(undoableQueueReducer, []),
-            );
-            const [, dispatch] = result.current;
+  it("should render notification item with ADD action", () => {
+    const { result } = renderHook(() =>
+      React.useReducer(undoableQueueReducer, []),
+    );
 
-            dispatch({ type: "ADD", payload: providerProps.notifications[0] });
+    const [, dispatch] = result.current;
 
-            await waitForNextUpdate();
-            const [state] = result.current;
-
-            expect(state).toEqual([
-                {
-                    id: "1",
-                    resource: "posts",
-                    seconds: 5000,
-                    isRunning: true,
-                },
-            ]);
-        });
+    act(() => {
+      dispatch({ type: "ADD", payload: providerProps.notifications[0] });
     });
 
-    it("remove notification item with DELETE action", () => {
-        act(async () => {
-            const { result, waitForNextUpdate } = renderHook(() =>
-                React.useReducer(
-                    undoableQueueReducer,
-                    providerProps.notifications,
-                ),
-            );
-            const [, dispatch] = result.current;
+    const [state] = result.current;
 
-            dispatch({
-                type: "DELETE",
-                payload: providerProps.notifications[0],
-            });
+    expect(state).toEqual([
+      {
+        id: "1",
+        resource: "posts",
+        seconds: 5000,
+        isRunning: true,
+      },
+    ]);
+  });
 
-            await waitForNextUpdate();
-            const [state] = result.current;
+  it("remove notification item with DELETE action", async () => {
+    const { result } = renderHook(() =>
+      React.useReducer(undoableQueueReducer, providerProps.notifications),
+    );
+    const [, dispatch] = result.current;
 
-            expect(state).toEqual([]);
-        });
+    act(() => {
+      dispatch({
+        type: "REMOVE",
+        payload: providerProps.notifications[0],
+      });
     });
 
-    it("decrease notification item by 1 second with DECREASE_NOTIFICATION_SECOND action", () => {
-        act(async () => {
-            const { result, waitForNextUpdate } = renderHook(() =>
-                React.useReducer(
-                    undoableQueueReducer,
-                    providerProps.notifications,
-                ),
-            );
-            const [, dispatch] = result.current;
+    const [state] = result.current;
 
-            dispatch({
-                type: "DECREASE_NOTIFICATION_SECOND",
-                payload: {
-                    id: providerProps.notifications[0].id,
-                    seconds: providerProps.notifications[0].seconds,
-                    resource: providerProps.notifications[0].resource,
-                },
-            });
+    expect(state).toEqual([]);
+  });
 
-            await waitForNextUpdate();
-            const [state] = result.current;
+  it("decrease notification item by 1 second with DECREASE_NOTIFICATION_SECOND action", async () => {
+    const { result } = renderHook(() =>
+      React.useReducer(undoableQueueReducer, providerProps.notifications),
+    );
+    const [, dispatch] = result.current;
 
-            expect(state[0].seconds).toEqual(
-                providerProps.notifications[0].seconds - 1000,
-            );
-        });
+    act(() => {
+      dispatch({
+        type: "DECREASE_NOTIFICATION_SECOND",
+        payload: {
+          id: providerProps.notifications[0].id,
+          seconds: providerProps.notifications[0].seconds,
+          resource: providerProps.notifications[0].resource,
+        },
+      });
     });
+
+    const [state] = result.current;
+
+    expect(state[0].seconds).toEqual(
+      providerProps.notifications[0].seconds - 1000,
+    );
+  });
 });

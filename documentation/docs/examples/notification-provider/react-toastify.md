@@ -1,11 +1,11 @@
 ---
 id: react-toastify
 title: React Toastify
+example-tags: [headless, notification-provider]
 ---
 
-<iframe src="https://codesandbox.io/embed/refine-react-toastify-example-ynsf7?autoresize=1&fontsize=14&module=%2Fsrc%2Fproviders%2FnotificationProvider.tsx&theme=dark&view=preview"
-    style={{width: "100%", height:"80vh", border: "0px", borderRadius: "8px", overflow:"hidden"}}
-    title="refine-react-toastify-example"
-    allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking"
-    sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
-></iframe>
+With Refine Notification Provider, you can show notification messages in your application anywhere. These may be warnings or errors that advise an action and help maintain user engagement with the app's functionality. You can use any notification library and manage them with Refine's `useNotification` hook! In this example we used the [React Toastify](https://github.com/fkhadra/react-toastify) library to show notifications.
+
+[Refer to the Refine Notification Provider documentation for more information. →](/docs/notification/notification-provider)
+
+<CodeSandboxExample path="with-react-toastify" />
